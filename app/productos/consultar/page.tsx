@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button"
 import { Plus } from "lucide-react"
 import { getProductos, getMarcas, getLineas, getProveedores } from "@/lib/api-service"
 import type { Producto, Marca, Linea, Proveedor } from "@/lib/mock-data"
+import WithAuth from "@/components/auth/withAuth"
+import RoleGuard from "@/components/auth/RoleGuard"
 
 export default function ConsultarProductosPage() {
   const [productos, setProductos] = React.useState<Producto[]>([])
@@ -39,34 +41,38 @@ export default function ConsultarProductosPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <AppHeader showBreadcrumbs />
-      <div className="flex">
-        <QuickNavLeft />
-        <main className="flex-1 lg:ml-72 p-6">
-          <div className="mb-8 flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold mb-2">Consultar Productos</h1>
-              <p className="text-muted-foreground">Administra y visualiza todos los productos del sistema</p>
-            </div>
-            <Button asChild size="lg">
-              <Link href="/productos/registrar">
-                <Plus className="mr-2 h-5 w-5" />
-                Agregar Producto
-              </Link>
-            </Button>
+    <WithAuth>
+      <RoleGuard allowedRoles={['administrador', 'vendedor']} >
+        <div className="min-h-screen bg-background">
+          <AppHeader showBreadcrumbs />
+          <div className="flex">
+            <QuickNavLeft />
+            <main className="flex-1 lg:ml-72 p-6">
+              <div className="mb-8 flex items-center justify-between">
+                <div>
+                  <h1 className="text-3xl font-bold mb-2">Consultar Productos</h1>
+                  <p className="text-muted-foreground">Administra y visualiza todos los productos del sistema</p>
+                </div>
+                <Button asChild size="lg">
+                  <Link href="/productos/registrar">
+                    <Plus className="mr-2 h-5 w-5" />
+                    Agregar Producto
+                  </Link>
+                </Button>
+              </div>
+              <ProductoTable
+                productos={productos}
+                marcas={marcas}
+                lineas={lineas}
+                proveedores={proveedores}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+                onView={handleView}
+              />
+            </main>
           </div>
-          <ProductoTable
-            productos={productos}
-            marcas={marcas}
-            lineas={lineas}
-            proveedores={proveedores}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-            onView={handleView}
-          />
-        </main>
-      </div>
-    </div>
+        </div>
+      </RoleGuard>
+    </WithAuth>
   )
 }

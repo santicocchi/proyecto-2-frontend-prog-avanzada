@@ -4,6 +4,8 @@ import { QuickNavLeft } from "@/components/quick-nav-left"
 import { ProveedorForm } from "@/components/proveedor-form"
 import { createProveedor } from "@/lib/api-service"
 import type { ProveedorFormData } from "@/components/proveedor-form"
+import WithAuth from "@/components/auth/withAuth"
+import RoleGuard from "@/components/auth/RoleGuard"
 
 export default function RegistrarProveedorPage() {
   const handleSubmit = async (data: ProveedorFormData) => {
@@ -17,6 +19,8 @@ export default function RegistrarProveedorPage() {
   }
 
   return (
+    <WithAuth>
+          <RoleGuard allowedRoles={['administrador', 'vendedor']} >
     <div className="min-h-screen bg-background">
       <AppHeader showBreadcrumbs />
       <div className="flex">
@@ -30,5 +34,7 @@ export default function RegistrarProveedorPage() {
         </main>
       </div>
     </div>
+    </RoleGuard>
+    </WithAuth>
   )
 }

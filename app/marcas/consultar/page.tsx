@@ -9,6 +9,8 @@ import { Plus } from "lucide-react"
 import Link from "next/link"
 import { getMarcas, deleteMarca } from "@/lib/api-service"
 import type { Marca } from "@/lib/mock-data"
+import WithAuth from "@/components/auth/withAuth"
+import RoleGuard from "@/components/auth/RoleGuard"
 
 export default function ConsultarMarcasPage() {
   const [marcas, setMarcas] = React.useState<Marca[]>([])
@@ -39,6 +41,8 @@ export default function ConsultarMarcasPage() {
   }
 
   return (
+    <WithAuth>
+          <RoleGuard allowedRoles={['administrador', 'vendedor']} >
     <div className="min-h-screen bg-background">
       <AppHeader showBreadcrumbs />
       <div className="flex">
@@ -60,5 +64,7 @@ export default function ConsultarMarcasPage() {
         </main>
       </div>
     </div>
+    </RoleGuard>
+    </WithAuth>
   )
 }

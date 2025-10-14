@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button"
 import { Plus } from "lucide-react"
 import { getProveedores } from "@/lib/api-service"
 import type { Proveedor } from "@/lib/mock-data"
+import WithAuth from "@/components/auth/withAuth"
+import RoleGuard from "@/components/auth/RoleGuard"
 
 export default function ConsultarProveedoresPage() {
   const [proveedores, setProveedores] = React.useState<Proveedor[]>([])
@@ -33,6 +35,8 @@ export default function ConsultarProveedoresPage() {
   }
 
   return (
+    <WithAuth>
+          <RoleGuard allowedRoles={['administrador', 'vendedor']} >
     <div className="min-h-screen bg-background">
       <AppHeader showBreadcrumbs />
       <div className="flex">
@@ -54,5 +58,7 @@ export default function ConsultarProveedoresPage() {
         </main>
       </div>
     </div>
+    </RoleGuard>
+    </WithAuth>
   )
 }

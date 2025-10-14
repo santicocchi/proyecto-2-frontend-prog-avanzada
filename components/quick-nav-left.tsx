@@ -27,8 +27,8 @@ const navSections = [
   {
     title: "Autenticación",
     items: [
-      { href: "/auth/login", label: "Iniciar Sesión", icon: LogIn },
-      { href: "/auth/register", label: "Crear Cuenta", icon: UserPlus },
+      { href: "/login", label: "Iniciar Sesión", icon: LogIn },
+      { href: "/register", label: "Crear Cuenta", icon: UserPlus },
     ],
   },
   {
