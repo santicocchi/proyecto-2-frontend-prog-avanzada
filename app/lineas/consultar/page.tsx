@@ -9,6 +9,8 @@ import { Plus } from "lucide-react"
 import Link from "next/link"
 import { getMarcas, getLineas, deleteLinea } from "@/lib/api-service"
 import type { Marca, Linea } from "@/lib/mock-data"
+import WithAuth from "@/components/auth/withAuth"
+import RoleGuard from "@/components/auth/RoleGuard"
 
 export default function ConsultarLineasPage() {
   const [marcas, setMarcas] = React.useState<Marca[]>([])
@@ -44,26 +46,30 @@ export default function ConsultarLineasPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <AppHeader showBreadcrumbs />
-      <div className="flex">
-        <QuickNavLeft />
-        <main className="flex-1 lg:ml-72 p-6">
-          <div className="mb-6 flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold mb-2">Consultar Líneas</h1>
-              <p className="text-muted-foreground">Administra y visualiza todas las líneas/categorías registradas</p>
-            </div>
-            <Button asChild>
-              <Link href="/lineas/registrar">
-                <Plus className="mr-2 h-4 w-4" />
-                Nueva Línea
-              </Link>
-            </Button>
+    <WithAuth>
+      <RoleGuard allowedRoles={['administrador', 'vendedor']} >
+        <div className="min-h-screen bg-background">
+          <AppHeader showBreadcrumbs />
+          <div className="flex">
+            <QuickNavLeft />
+            <main className="flex-1 lg:ml-72 p-6">
+              <div className="mb-6 flex items-center justify-between">
+                <div>
+                  <h1 className="text-3xl font-bold mb-2">Consultar Líneas</h1>
+                  <p className="text-muted-foreground">Administra y visualiza todas las líneas/categorías registradas</p>
+                </div>
+                <Button asChild>
+                  <Link href="/lineas/registrar">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Nueva Línea
+                  </Link>
+                </Button>
+              </div>
+              <LineaTable marcas={marcas} lineas={lineas} onEdit={handleEdit} onDelete={handleDelete} onView={handleView} />
+            </main>
           </div>
-          <LineaTable marcas={marcas} lineas={lineas} onEdit={handleEdit} onDelete={handleDelete} onView={handleView} />
-        </main>
-      </div>
-    </div>
+        </div>
+      </RoleGuard>
+    </WithAuth>
   )
 }
