@@ -36,6 +36,9 @@ export interface ProveedorBackend {
   id: number
   nombre: string
   cuit: string
+  direccion?: string // Agregando direccion opcional
+  createdAt?: string
+  updatedAt?: string
 }
 
 export interface Cliente {
@@ -62,15 +65,29 @@ export interface ProductoBackend {
   nombre: string
   descripcion: string
   precio_sin_impuesto: string
+  precio_con_impuesto: number // Agregando precio_con_impuesto para mostrar en selección de productos
+  impuesto?: number // Agregando impuesto opcional para detalles
   stock: number
-  marca: {
-    id: number
+  marca:
+    | {
+        id: number
+        nombre: string
+      }
+    | string // Puede ser objeto o string según el endpoint
+  linea:
+    | Array<{
+        id: number
+        nombre: string
+      }>
+    | string // Puede ser array o string según el endpoint
+  proveedores?: Array<{
+    // Agregando proveedores para detalles
     nombre: string
-  }
-  linea: Array<{
-    id: number
-    nombre: string
+    precio_proveedor: string
+    codigo_proveedor: string
   }>
+  createdAt?: string
+  updatedAt?: string
 }
 
 export interface CreateProductoDto {
@@ -145,6 +162,24 @@ export interface CreateVentaDto {
   }>
 }
 
+export interface LineaDetallada {
+  id: number
+  nombre: string
+  marcas: Array<{
+    id: number
+    nombre: string
+  }>
+  createdAt: string
+  updatedAt: string
+}
+
+export interface AsociarProveedorProductoDto {
+  proveedorId: number
+  productoId: number
+  precio_proveedor: number
+  codigo_proveedor: string
+}
+
 // ============= MARCAS =============
 
 export async function getMarcas(): Promise<Marca[]> {
@@ -179,7 +214,7 @@ export async function createMarca(marca: CreateMarcaDto): Promise<Marca> {
 
 export async function updateMarca(id: string, marca: Partial<CreateMarcaDto>): Promise<Marca> {
   try {
-    const response = await api.put(`/marca/${id}`, marca)
+    const response = await api.patch(`/marca/${id}`, marca) // Cambiando updateMarca a PATCH en lugar de PUT
     return response.data
   } catch (error) {
     console.error("Error en updateMarca:", error)
@@ -218,7 +253,7 @@ export async function getLineasByMarca(marcaId: string): Promise<Linea[]> {
   }
 }
 
-export async function getLineaById(id: string): Promise<Linea | undefined> {
+export async function getLineaById(id: string): Promise<LineaDetallada | undefined> {
   try {
     const response = await api.get(`/linea/${id}`)
     return response.data
@@ -240,7 +275,7 @@ export async function createLinea(linea: CreateLineaDto): Promise<Linea> {
 
 export async function updateLinea(id: string, linea: Partial<CreateLineaDto>): Promise<Linea> {
   try {
-    const response = await api.put(`/linea/${id}`, linea)
+    const response = await api.patch(`/linea/${id}`, linea) // Cambiando updateLinea a PATCH en lugar de PUT
     return response.data
   } catch (error) {
     console.error("Error en updateLinea:", error)
@@ -291,7 +326,7 @@ export async function createProveedor(proveedor: CreateProveedorDto): Promise<Pr
 
 export async function updateProveedor(id: string, proveedor: Partial<CreateProveedorDto>): Promise<ProveedorBackend> {
   try {
-    const response = await api.put(`/proveedor/${id}`, proveedor)
+    const response = await api.patch(`/proveedor/${id}`, proveedor) // Cambiando a PATCH
     return response.data
   } catch (error) {
     console.error("Error en updateProveedor:", error)
@@ -342,7 +377,7 @@ export async function createProducto(producto: CreateProductoDto): Promise<Produ
 
 export async function updateProducto(id: string, producto: Partial<CreateProductoDto>): Promise<ProductoBackend> {
   try {
-    const response = await api.put(`/producto/${id}`, producto)
+    const response = await api.patch(`/producto/${id}`, producto) // Cambiando a PATCH
     return response.data
   } catch (error) {
     console.error("Error en updateProducto:", error)
@@ -393,7 +428,7 @@ export async function createCliente(cliente: CreateClienteDto): Promise<Cliente>
 
 export async function updateCliente(id: string, cliente: Partial<CreateClienteDto>): Promise<Cliente> {
   try {
-    const response = await api.put(`/cliente/${id}`, cliente)
+    const response = await api.patch(`/cliente/${id}`, cliente) // Cambiando updateCliente a PATCH en lugar de PUT
     return response.data
   } catch (error) {
     console.error("Error en updateCliente:", error)
@@ -522,6 +557,16 @@ export async function deleteVenta(id: number): Promise<void> {
     await api.delete(`/venta/${id}`)
   } catch (error) {
     console.error("Error en deleteVenta:", error)
+    throw error
+  }
+}
+
+export async function asociarProveedorProducto(data: AsociarProveedorProductoDto): Promise<any> {
+  try {
+    const response = await api.post("/proveedor-x-producto", data)
+    return response.data
+  } catch (error) {
+    console.error("Error en asociarProveedorProducto:", error)
     throw error
   }
 }

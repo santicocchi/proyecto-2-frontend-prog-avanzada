@@ -22,20 +22,20 @@ import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 
 const dashboardCards = [
-    {
-        title: "Iniciar Sesión",
-        description: "Accede a tu cuenta del sistema",
-        icon: LogIn,
-        href: "/auth/login",
-        color: "text-blue-600 dark:text-blue-400",
-    },
-    {
-        title: "Crear Cuenta",
-        description: "Registra un nuevo usuario",
-        icon: UserPlus,
-        href: "/auth/register",
-        color: "text-green-600 dark:text-green-400",
-    },
+    // {
+    //     title: "Iniciar Sesión",
+    //     description: "Accede a tu cuenta del sistema",
+    //     icon: LogIn,
+    //     href: "/auth/login",
+    //     color: "text-blue-600 dark:text-blue-400",
+    // },
+    // {
+    //     title: "Crear Cuenta",
+    //     description: "Registra un nuevo usuario",
+    //     icon: UserPlus,
+    //     href: "/auth/register",
+    //     color: "text-green-600 dark:text-green-400",
+    // },
     {
         title: "Mi Perfil",
         description: "Ver y editar mis datos personales",
@@ -127,13 +127,13 @@ const dashboardCards = [
         href: "/proveedores/consultar",
         color: "text-blue-600 dark:text-blue-400",
     },
-    {
-        title: "Registrar Usuario",
-        description: "Añade un nuevo empleado al sistema",
-        icon: UserPlus,
-        href: "/usuarios/registrar",
-        color: "text-emerald-600 dark:text-emerald-400",
-    },
+    // {
+    //     title: "Registrar Usuario",
+    //     description: "Añade un nuevo empleado al sistema",
+    //     icon: UserPlus,
+    //     href: "/usuarios/registrar",
+    //     color: "text-emerald-600 dark:text-emerald-400",
+    // },
     {
         title: "Consultar Usuarios",
         description: "Administra los usuarios del sistema",
@@ -152,15 +152,15 @@ const dashboardCards = [
 
 export default async function DashboardPage() {
 
-      const cookieStore = cookies();
+    const cookieStore = cookies();
 
-  // Verifico si existe la cookie de sesión
-  const isLoggedIn = (await cookieStore).has("access_token");
+    // Verifico si existe la cookie de sesión
+    const isLoggedIn = (await cookieStore).has("access_token");
 
-  // Si está logueado => dashboard
-  if (!isLoggedIn) {
-    redirect("/login");
-  }
+    // Si está logueado => dashboard
+    if (!isLoggedIn) {
+        redirect("/login");
+    }
     return (
         <WithAuth>
             <div className="min-h-screen bg-background">
@@ -171,30 +171,29 @@ export default async function DashboardPage() {
                         <p className="text-lg text-muted-foreground text-pretty">Selecciona una opción para comenzar</p>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
                         {dashboardCards.map((card) => {
                             const Icon = card.icon
                             return (
-                                <Card key={card.href} className="group hover:shadow-lg transition-all duration-200 hover:-translate-y-1">
-                                    <CardHeader>
-                                        <div className={`mb-4 ${card.color}`}>
-                                            <Icon className="h-12 w-12" />
-                                        </div>
-                                        <CardTitle className="text-xl">{card.title}</CardTitle>
-                                        <CardDescription className="text-base">{card.description}</CardDescription>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <Button asChild className="w-full" size="lg">
-                                            <Link href={card.href}>
-                                                Ir
-                                                <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                                            </Link>
-                                        </Button>
-                                    </CardContent>
-                                </Card>
+                                <Link
+                                    key={card.href}
+                                    href={card.href}
+                                    className="group block"
+                                >
+                                    <Card className="hover:shadow-lg hover:-translate-y-1 transition-all duration-200 cursor-pointer">
+                                        <CardHeader>
+                                            <div className={`mb-4 ${card.color}`}>
+                                                <Icon className="h-12 w-12" />
+                                            </div>
+                                            <CardTitle className="text-xl">{card.title}</CardTitle>
+                                            <CardDescription className="">{card.description}</CardDescription>
+                                        </CardHeader>
+                                    </Card>
+                                </Link>
                             )
                         })}
                     </div>
+
                 </main>
             </div>
         </WithAuth>

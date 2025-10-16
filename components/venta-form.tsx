@@ -72,7 +72,7 @@ export function VentaForm() {
     const producto = productos.find((p) => p.id === Number(nuevoDetalle.productoId))
     if (!producto) return
 
-    const precio = Number.parseFloat(producto.precio_sin_impuesto)
+    const precio = producto.precio_con_impuesto
     const subtotal = precio * nuevoDetalle.cantidad
 
     setDetalles([
@@ -215,7 +215,7 @@ export function VentaForm() {
                   <SelectContent>
                     {productos.map((producto) => (
                       <SelectItem key={producto.id} value={producto.id.toString()}>
-                        {producto.nombre} - ${producto.precio_sin_impuesto}
+                        {producto.nombre} - ${producto.precio_con_impuesto.toLocaleString()}
                       </SelectItem>
                     ))}
                   </SelectContent>
