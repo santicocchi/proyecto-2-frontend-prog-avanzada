@@ -24,13 +24,13 @@ import { cn } from "@/lib/utils"
 import { useMobile } from "@/hooks/use-mobile"
 
 const navSections = [
-  {
-    title: "Autenticación",
-    items: [
-      { href: "/login", label: "Iniciar Sesión", icon: LogIn },
-      { href: "/register", label: "Crear Cuenta", icon: UserPlus },
-    ],
-  },
+  // {
+  //   title: "Autenticación",
+  //   items: [
+  //     { href: "/login", label: "Iniciar Sesión", icon: LogIn },
+  //     { href: "/register", label: "Crear Cuenta", icon: UserPlus },
+  //   ],
+  // },
   {
     title: "Perfil",
     items: [{ href: "/perfil", label: "Mi Perfil", icon: User }],
@@ -80,7 +80,7 @@ const navSections = [
   {
     title: "Usuarios",
     items: [
-      { href: "/usuarios/registrar", label: "Registrar Usuario", icon: UserPlus },
+      // { href: "/usuarios/registrar", label: "Registrar Usuario", icon: UserPlus },
       { href: "/usuarios/consultar", label: "Consultar Usuarios", icon: Users },
     ],
   },

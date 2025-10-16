@@ -7,19 +7,36 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { createVenta, getClientes, getFormasPago, getProductos } from "@/lib/api-service"
+import {
+  createVenta,
+  getClientes,
+  getFormasPago,
+  getProductos,
+  type Cliente,
+  type FormaPago,
+  type ProductoBackend,
+  type CreateVentaDto,
+} from "@/lib/api-service"
 import { Loader2, Plus, Trash2 } from "lucide-react"
-import type { Cliente, FormaPago, Producto } from "@/lib/mock-data"
+
+interface DetalleVentaForm {
+  productoId: number
+  cantidad: number
+  precio: number
+  subtotal: number
+  nombreProducto: string
+}
 
 export function VentaForm() {
   const [loading, setLoading] = React.useState(false)
   const [clientes, setClientes] = React.useState<Cliente[]>([])
   const [formasPago, setFormasPago] = React.useState<FormaPago[]>([])
-  const [productos, setProductos] = React.useState<Producto[]>([])
-  const [detalles, setDetalles] = React.useState<Array<{ productoId: string; cantidad: number; subtotal: number }>>([])
+  const [productos, setProductos] = React.useState<ProductoBackend[]>([])
+  const [detalles, setDetalles] = React.useState<DetalleVentaForm[]>([])
   const [formData, setFormData] = React.useState({
     clienteId: "",
     formaPagoId: "",
+    userId: "1", // Hardcoded por ahora, debería venir de la sesión
     fechaVenta: new Date().toISOString().split("T")[0],
   })
   const [nuevoDetalle, setNuevoDetalle] = React.useState({
@@ -52,12 +69,22 @@ export function VentaForm() {
       return
     }
 
-    const producto = productos.find((p) => p.id === nuevoDetalle.productoId)
+    const producto = productos.find((p) => p.id === Number(nuevoDetalle.productoId))
     if (!producto) return
 
-    const subtotal = producto.precio * nuevoDetalle.cantidad
+    const precio = Number.parseFloat(producto.precio_sin_impuesto)
+    const subtotal = precio * nuevoDetalle.cantidad
 
-    setDetalles([...detalles, { ...nuevoDetalle, subtotal }])
+    setDetalles([
+      ...detalles,
+      {
+        productoId: Number(nuevoDetalle.productoId),
+        cantidad: nuevoDetalle.cantidad,
+        precio,
+        subtotal,
+        nombreProducto: producto.nombre,
+      },
+    ])
     setNuevoDetalle({ productoId: "", cantidad: 1 })
   }
 
@@ -77,27 +104,32 @@ export function VentaForm() {
       return
     }
 
+    if (!formData.clienteId || !formData.formaPagoId) {
+      alert("Complete todos los campos requeridos")
+      return
+    }
+
     setLoading(true)
 
     try {
-      const ventaData = {
-        ...formData,
-        fechaVenta: new Date(formData.fechaVenta),
-        total: calcularTotal(),
-        detallesVenta: detalles.map((d, index) => ({
-          id: `temp-${index}`,
-          ...d,
-          ventaId: "temp",
-          createdAt: new Date(),
-          updatedAt: new Date(),
+      const ventaData: CreateVentaDto = {
+        fecha_venta: new Date(formData.fechaVenta).toISOString(),
+        clienteId: Number(formData.clienteId),
+        formaPagoId: Number(formData.formaPagoId),
+        userId: Number(formData.userId),
+        detallesVenta: detalles.map((d) => ({
+          productoId: d.productoId,
+          cantidad: d.cantidad,
         })),
       }
 
       await createVenta(ventaData)
       alert("Venta registrada exitosamente")
+
       setFormData({
         clienteId: "",
         formaPagoId: "",
+        userId: "1",
         fechaVenta: new Date().toISOString().split("T")[0],
       })
       setDetalles([])
@@ -129,7 +161,7 @@ export function VentaForm() {
                 </SelectTrigger>
                 <SelectContent>
                   {clientes.map((cliente) => (
-                    <SelectItem key={cliente.id} value={cliente.id}>
+                    <SelectItem key={cliente.id} value={cliente.id.toString()}>
                       {cliente.nombre} {cliente.apellido}
                     </SelectItem>
                   ))}
@@ -148,7 +180,7 @@ export function VentaForm() {
                 </SelectTrigger>
                 <SelectContent>
                   {formasPago.map((fp) => (
-                    <SelectItem key={fp.id} value={fp.id}>
+                    <SelectItem key={fp.id} value={fp.id.toString()}>
                       {fp.nombre}
                     </SelectItem>
                   ))}
@@ -182,8 +214,8 @@ export function VentaForm() {
                   </SelectTrigger>
                   <SelectContent>
                     {productos.map((producto) => (
-                      <SelectItem key={producto.id} value={producto.id}>
-                        {producto.nombre} - ${producto.precio}
+                      <SelectItem key={producto.id} value={producto.id.toString()}>
+                        {producto.nombre} - ${producto.precio_sin_impuesto}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -222,27 +254,24 @@ export function VentaForm() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {detalles.map((detalle, index) => {
-                      const producto = productos.find((p) => p.id === detalle.productoId)
-                      return (
-                        <TableRow key={index}>
-                          <TableCell>{producto?.nombre}</TableCell>
-                          <TableCell className="text-right">{detalle.cantidad}</TableCell>
-                          <TableCell className="text-right">${producto?.precio}</TableCell>
-                          <TableCell className="text-right">${detalle.subtotal}</TableCell>
-                          <TableCell className="text-right">
-                            <Button type="button" variant="ghost" size="icon" onClick={() => eliminarDetalle(index)}>
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      )
-                    })}
+                    {detalles.map((detalle, index) => (
+                      <TableRow key={index}>
+                        <TableCell>{detalle.nombreProducto}</TableCell>
+                        <TableCell className="text-right">{detalle.cantidad}</TableCell>
+                        <TableCell className="text-right">${detalle.precio.toFixed(2)}</TableCell>
+                        <TableCell className="text-right">${detalle.subtotal.toFixed(2)}</TableCell>
+                        <TableCell className="text-right">
+                          <Button type="button" variant="ghost" size="icon" onClick={() => eliminarDetalle(index)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
                     <TableRow>
                       <TableCell colSpan={3} className="text-right font-semibold">
                         Total:
                       </TableCell>
-                      <TableCell className="text-right font-bold text-lg">${calcularTotal()}</TableCell>
+                      <TableCell className="text-right font-bold text-lg">${calcularTotal().toFixed(2)}</TableCell>
                       <TableCell />
                     </TableRow>
                   </TableBody>

@@ -6,8 +6,14 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { createCliente } from "@/lib/api-service"
+import { createCliente, type CreateClienteDto } from "@/lib/api-service"
 import { Loader2 } from "lucide-react"
+
+const TIPO_DOCUMENTO_MAP: Record<string, number> = {
+  DNI: 1,
+  CUIT: 2,
+  Pasaporte: 3,
+}
 
 export function ClienteForm() {
   const [loading, setLoading] = React.useState(false)
@@ -15,7 +21,7 @@ export function ClienteForm() {
     nombre: "",
     apellido: "",
     tipoDocumento: "DNI",
-    numeroDocumento: "",
+    num_documento: "",
     telefono: "",
   })
 
@@ -24,13 +30,21 @@ export function ClienteForm() {
     setLoading(true)
 
     try {
-      await createCliente(formData)
+      const clienteDto: CreateClienteDto = {
+        nombre: formData.nombre,
+        apellido: formData.apellido,
+        num_documento: formData.num_documento,
+        telefono: formData.telefono,
+        tipo_documento: TIPO_DOCUMENTO_MAP[formData.tipoDocumento],
+      }
+
+      await createCliente(clienteDto)
       alert("Cliente registrado exitosamente")
       setFormData({
         nombre: "",
         apellido: "",
         tipoDocumento: "DNI",
-        numeroDocumento: "",
+        num_documento: "",
         telefono: "",
       })
     } catch (error) {
@@ -90,11 +104,11 @@ export function ClienteForm() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="numeroDocumento">Número de Documento *</Label>
+              <Label htmlFor="num_documento">Número de Documento *</Label>
               <Input
-                id="numeroDocumento"
-                value={formData.numeroDocumento}
-                onChange={(e) => setFormData({ ...formData, numeroDocumento: e.target.value })}
+                id="num_documento"
+                value={formData.num_documento}
+                onChange={(e) => setFormData({ ...formData, num_documento: e.target.value })}
                 required
               />
             </div>
