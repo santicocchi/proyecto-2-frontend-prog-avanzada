@@ -118,7 +118,7 @@ export default function LoginPage() {
       const result = await loginUser(emailTrim, passwordTrim)
 
       if (result.ok) {
-        window.location.href = "/"
+        window.location.href = "/dashboard"
         return
       }
 

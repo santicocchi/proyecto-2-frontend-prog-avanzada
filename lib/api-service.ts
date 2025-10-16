@@ -1,229 +1,527 @@
-// Servicio de API - Preparado para conectar con backend
-// Por ahora usa mock data, reemplazar con fetch/axios cuando esté el backend
+// Servicio de API - Conectado con backend
+// Configuración base de la API
+const API_BASE_URL = "http://localhost:3001"
 
-import {
-  mockMarcas,
-  mockLineas,
-  mockProveedores,
-  mockProductos,
-  mockClientes,
-  mockFormasPago,
-  mockVentas,
-  mockUsuarioActual,
-  type Marca,
-  type Linea,
-  type Proveedor,
-  type Producto,
-  type Cliente,
-  type FormaPago,
-  type Venta,
-  type Usuario,
-} from "./mock-data"
+import api from "@/services/api"
+
+// ============= TIPOS =============
+
+export interface Marca {
+  id: number
+  nombre: string
+  lineas?: Linea[]
+}
+
+export interface Linea {
+  id: number
+  nombre: string
+}
+
+export interface CreateMarcaDto {
+  nombre: string
+  lineas?: number[]
+}
+
+export interface CreateLineaDto {
+  nombre: string
+}
+
+export interface CreateProveedorDto {
+  nombre: string
+  direccion: string
+  cuit: string
+}
+
+export interface ProveedorBackend {
+  id: number
+  nombre: string
+  cuit: string
+}
+
+export interface Cliente {
+  id: number
+  nombre: string
+  apellido: string
+  tipo_documento: string
+  num_documento: string
+  telefono: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface CreateClienteDto {
+  nombre: string
+  apellido: string
+  num_documento: string
+  telefono: string
+  tipo_documento: number // 1 para DNI, etc.
+}
+
+export interface ProductoBackend {
+  id: number
+  nombre: string
+  descripcion: string
+  precio_sin_impuesto: string
+  stock: number
+  marca: {
+    id: number
+    nombre: string
+  }
+  linea: Array<{
+    id: number
+    nombre: string
+  }>
+}
+
+export interface CreateProductoDto {
+  nombre: string
+  descripcion: string
+  precio: number
+  stock: number
+  marcaId: number
+  lineaId: number
+}
+
+export interface Usuario {
+  id: number
+  email: string
+  password: string
+  role: Array<{
+    id: number
+    name: string
+    permissionCodes: Array<{
+      id: number
+      name: string
+    }>
+  }>
+}
+
+export interface FormaPago {
+  id: number
+  nombre: string
+}
+
+export interface VentaListItem {
+  id: number
+  fecha: string
+  cliente: string
+  responsable: string
+  formaPago: string
+  total: number
+}
+
+export interface DetalleVentaDetallado {
+  producto: string
+  descripcion: string
+  precio_sin_impuesto: string
+  impuesto: number
+  precio_impuesto: number
+  cantidad: number
+  subtotal: string
+}
+
+export interface VentaDetallada {
+  id: number
+  fecha: string
+  cliente: string
+  documento: string
+  telefono_cliente: string
+  responsable: string
+  formaPago: string
+  detallesVenta: DetalleVentaDetallado[]
+  total: number
+  createdAt: string
+  updatedAt: string
+}
+
+export interface CreateVentaDto {
+  fecha_venta: string // ISO date string
+  clienteId: number
+  formaPagoId: number
+  userId: number
+  detallesVenta: Array<{
+    productoId: number
+    cantidad: number
+  }>
+}
 
 // ============= MARCAS =============
 
 export async function getMarcas(): Promise<Marca[]> {
-  // TODO: Reemplazar con: return fetch('/api/marcas').then(res => res.json())
-  return Promise.resolve(mockMarcas)
+  try {
+    const response = await api.get("/marca")
+    return response.data
+  } catch (error) {
+    console.error("Error en getMarcas:", error)
+    throw error
+  }
 }
 
 export async function getMarcaById(id: string): Promise<Marca | undefined> {
-  // TODO: Reemplazar con: return fetch(`/api/marcas/${id}`).then(res => res.json())
-  return Promise.resolve(mockMarcas.find((m) => m.id === id))
+  try {
+    const response = await api.get(`/marca/${id}`)
+    return response.data
+  } catch (error) {
+    console.error("Error en getMarcaById:", error)
+    throw error
+  }
 }
 
-export async function createMarca(marca: Omit<Marca, "id">): Promise<Marca> {
-  // TODO: Reemplazar con: return fetch('/api/marcas', { method: 'POST', body: JSON.stringify(marca) })
-  console.log("Crear marca:", marca)
-  return Promise.resolve({ ...marca, id: Date.now().toString() })
+export async function createMarca(marca: CreateMarcaDto): Promise<Marca> {
+  try {
+    const response = await api.post("/marca", marca)
+    return response.data
+  } catch (error) {
+    console.error("Error en createMarca:", error)
+    throw error
+  }
 }
 
-export async function updateMarca(id: string, marca: Partial<Marca>): Promise<Marca> {
-  // TODO: Reemplazar con: return fetch(`/api/marcas/${id}`, { method: 'PUT', body: JSON.stringify(marca) })
-  console.log("Actualizar marca:", id, marca)
-  return Promise.resolve({ ...mockMarcas[0], ...marca, id })
+export async function updateMarca(id: string, marca: Partial<CreateMarcaDto>): Promise<Marca> {
+  try {
+    const response = await api.put(`/marca/${id}`, marca)
+    return response.data
+  } catch (error) {
+    console.error("Error en updateMarca:", error)
+    throw error
+  }
 }
 
 export async function deleteMarca(id: string): Promise<void> {
-  // TODO: Reemplazar con: return fetch(`/api/marcas/${id}`, { method: 'DELETE' })
-  console.log("Eliminar marca:", id)
-  return Promise.resolve()
+  try {
+    await api.delete(`/marca/${id}`)
+  } catch (error) {
+    console.error("Error en deleteMarca:", error)
+    throw error
+  }
 }
 
 // ============= LÍNEAS =============
 
 export async function getLineas(): Promise<Linea[]> {
-  // TODO: Reemplazar con: return fetch('/api/lineas').then(res => res.json())
-  return Promise.resolve(mockLineas)
+  try {
+    const response = await api.get("/linea")
+    return response.data
+  } catch (error) {
+    console.error("Error en getLineas:", error)
+    throw error
+  }
 }
 
 export async function getLineasByMarca(marcaId: string): Promise<Linea[]> {
-  // TODO: Reemplazar con: return fetch(`/api/lineas?marcaId=${marcaId}`).then(res => res.json())
-  return Promise.resolve(mockLineas.filter((l) => l.marcaId === marcaId))
+  try {
+    const response = await api.get(`/linea`, { params: { marcaId } })
+    return response.data
+  } catch (error) {
+    console.error("Error en getLineasByMarca:", error)
+    throw error
+  }
 }
 
 export async function getLineaById(id: string): Promise<Linea | undefined> {
-  // TODO: Reemplazar con: return fetch(`/api/lineas/${id}`).then(res => res.json())
-  return Promise.resolve(mockLineas.find((l) => l.id === id))
+  try {
+    const response = await api.get(`/linea/${id}`)
+    return response.data
+  } catch (error) {
+    console.error("Error en getLineaById:", error)
+    throw error
+  }
 }
 
-export async function createLinea(linea: Omit<Linea, "id">): Promise<Linea> {
-  // TODO: Reemplazar con: return fetch('/api/lineas', { method: 'POST', body: JSON.stringify(linea) })
-  console.log("Crear línea:", linea)
-  return Promise.resolve({ ...linea, id: Date.now().toString() })
+export async function createLinea(linea: CreateLineaDto): Promise<Linea> {
+  try {
+    const response = await api.post("/linea", linea)
+    return response.data
+  } catch (error) {
+    console.error("Error en createLinea:", error)
+    throw error
+  }
 }
 
-export async function updateLinea(id: string, linea: Partial<Linea>): Promise<Linea> {
-  // TODO: Reemplazar con: return fetch(`/api/lineas/${id}`, { method: 'PUT', body: JSON.stringify(linea) })
-  console.log("Actualizar línea:", id, linea)
-  return Promise.resolve({ ...mockLineas[0], ...linea, id })
+export async function updateLinea(id: string, linea: Partial<CreateLineaDto>): Promise<Linea> {
+  try {
+    const response = await api.put(`/linea/${id}`, linea)
+    return response.data
+  } catch (error) {
+    console.error("Error en updateLinea:", error)
+    throw error
+  }
 }
 
 export async function deleteLinea(id: string): Promise<void> {
-  // TODO: Reemplazar con: return fetch(`/api/lineas/${id}`, { method: 'DELETE' })
-  console.log("Eliminar línea:", id)
-  return Promise.resolve()
+  try {
+    await api.delete(`/linea/${id}`)
+  } catch (error) {
+    console.error("Error en deleteLinea:", error)
+    throw error
+  }
 }
 
 // ============= PROVEEDORES =============
 
-export async function getProveedores(): Promise<Proveedor[]> {
-  // TODO: Reemplazar con: return fetch('/api/proveedores').then(res => res.json())
-  return Promise.resolve(mockProveedores)
+export async function getProveedores(): Promise<ProveedorBackend[]> {
+  try {
+    const response = await api.get("/proveedor")
+    return response.data
+  } catch (error) {
+    console.error("Error en getProveedores:", error)
+    throw error
+  }
 }
 
-export async function getProveedorById(id: string): Promise<Proveedor | undefined> {
-  // TODO: Reemplazar con: return fetch(`/api/proveedores/${id}`).then(res => res.json())
-  return Promise.resolve(mockProveedores.find((p) => p.id === id))
+export async function getProveedorById(id: string): Promise<ProveedorBackend | undefined> {
+  try {
+    const response = await api.get(`/proveedor/${id}`)
+    return response.data
+  } catch (error) {
+    console.error("Error en getProveedorById:", error)
+    throw error
+  }
 }
 
-export async function createProveedor(proveedor: Omit<Proveedor, "id">): Promise<Proveedor> {
-  // TODO: Reemplazar con: return fetch('/api/proveedores', { method: 'POST', body: JSON.stringify(proveedor) })
-  console.log("Crear proveedor:", proveedor)
-  return Promise.resolve({ ...proveedor, id: Date.now().toString() })
+export async function createProveedor(proveedor: CreateProveedorDto): Promise<ProveedorBackend> {
+  try {
+    const response = await api.post("/proveedor", proveedor)
+    return response.data
+  } catch (error) {
+    console.error("Error en createProveedor:", error)
+    throw error
+  }
 }
 
-export async function updateProveedor(id: string, proveedor: Partial<Proveedor>): Promise<Proveedor> {
-  // TODO: Reemplazar con: return fetch(`/api/proveedores/${id}`, { method: 'PUT', body: JSON.stringify(proveedor) })
-  console.log("Actualizar proveedor:", id, proveedor)
-  return Promise.resolve({ ...mockProveedores[0], ...proveedor, id })
+export async function updateProveedor(id: string, proveedor: Partial<CreateProveedorDto>): Promise<ProveedorBackend> {
+  try {
+    const response = await api.put(`/proveedor/${id}`, proveedor)
+    return response.data
+  } catch (error) {
+    console.error("Error en updateProveedor:", error)
+    throw error
+  }
 }
 
 export async function deleteProveedor(id: string): Promise<void> {
-  // TODO: Reemplazar con: return fetch(`/api/proveedores/${id}`, { method: 'DELETE' })
-  console.log("Eliminar proveedor:", id)
-  return Promise.resolve()
+  try {
+    await api.delete(`/proveedor/${id}`)
+  } catch (error) {
+    console.error("Error en deleteProveedor:", error)
+    throw error
+  }
 }
 
 // ============= PRODUCTOS =============
 
-export async function getProductos(): Promise<Producto[]> {
-  // TODO: Reemplazar con: return fetch('/api/productos').then(res => res.json())
-  return Promise.resolve(mockProductos)
+export async function getProductos(): Promise<ProductoBackend[]> {
+  try {
+    const response = await api.get("/producto")
+    return response.data
+  } catch (error) {
+    console.error("Error en getProductos:", error)
+    throw error
+  }
 }
 
-export async function getProductoById(id: string): Promise<Producto | undefined> {
-  // TODO: Reemplazar con: return fetch(`/api/productos/${id}`).then(res => res.json())
-  return Promise.resolve(mockProductos.find((p) => p.id === id))
+export async function getProductoById(id: string): Promise<ProductoBackend | undefined> {
+  try {
+    const response = await api.get(`/producto/${id}`)
+    return response.data
+  } catch (error) {
+    console.error("Error en getProductoById:", error)
+    throw error
+  }
 }
 
-export async function createProducto(producto: Omit<Producto, "id" | "codigo">): Promise<Producto> {
-  // TODO: Reemplazar con: return fetch('/api/productos', { method: 'POST', body: JSON.stringify(producto) })
-  console.log("Crear producto:", producto)
-  const codigo = `110233${Date.now().toString().slice(-6)}`
-  return Promise.resolve({ ...producto, id: Date.now().toString(), codigo })
+export async function createProducto(producto: CreateProductoDto): Promise<ProductoBackend> {
+  try {
+    const response = await api.post("/producto", producto)
+    return response.data
+  } catch (error) {
+    console.error("Error en createProducto:", error)
+    throw error
+  }
 }
 
-export async function updateProducto(id: string, producto: Partial<Producto>): Promise<Producto> {
-  // TODO: Reemplazar con: return fetch(`/api/productos/${id}`, { method: 'PUT', body: JSON.stringify(producto) })
-  console.log("Actualizar producto:", id, producto)
-  return Promise.resolve({ ...mockProductos[0], ...producto, id })
+export async function updateProducto(id: string, producto: Partial<CreateProductoDto>): Promise<ProductoBackend> {
+  try {
+    const response = await api.put(`/producto/${id}`, producto)
+    return response.data
+  } catch (error) {
+    console.error("Error en updateProducto:", error)
+    throw error
+  }
 }
 
 export async function deleteProducto(id: string): Promise<void> {
-  // TODO: Reemplazar con: return fetch(`/api/productos/${id}`, { method: 'DELETE' })
-  console.log("Eliminar producto:", id)
-  return Promise.resolve()
+  try {
+    await api.delete(`/producto/${id}`)
+  } catch (error) {
+    console.error("Error en deleteProducto:", error)
+    throw error
+  }
 }
 
 // ============= CLIENTES =============
 
 export async function getClientes(): Promise<Cliente[]> {
-  // TODO: Reemplazar con: return fetch('/api/clientes').then(res => res.json())
-  return Promise.resolve(mockClientes)
+  try {
+    const response = await api.get("/cliente")
+    return response.data
+  } catch (error) {
+    console.error("Error en getClientes:", error)
+    throw error
+  }
 }
 
 export async function getClienteById(id: string): Promise<Cliente | undefined> {
-  // TODO: Reemplazar con: return fetch(`/api/clientes/${id}`).then(res => res.json())
-  return Promise.resolve(mockClientes.find((c) => c.id === id))
+  try {
+    const response = await api.get(`/cliente/${id}`)
+    return response.data
+  } catch (error) {
+    console.error("Error en getClienteById:", error)
+    throw error
+  }
 }
 
-export async function createCliente(cliente: Omit<Cliente, "id" | "createdAt" | "updatedAt">): Promise<Cliente> {
-  // TODO: Reemplazar con: return fetch('/api/clientes', { method: 'POST', body: JSON.stringify(cliente) })
-  console.log("Crear cliente:", cliente)
-  const now = new Date()
-  return Promise.resolve({ ...cliente, id: Date.now().toString(), createdAt: now, updatedAt: now })
+export async function createCliente(cliente: CreateClienteDto): Promise<Cliente> {
+  try {
+    const response = await api.post("/cliente", cliente)
+    return response.data
+  } catch (error) {
+    console.error("Error en createCliente:", error)
+    throw error
+  }
 }
 
-export async function updateCliente(id: string, cliente: Partial<Cliente>): Promise<Cliente> {
-  // TODO: Reemplazar con: return fetch(`/api/clientes/${id}`, { method: 'PUT', body: JSON.stringify(cliente) })
-  console.log("Actualizar cliente:", id, cliente)
-  return Promise.resolve({ ...mockClientes[0], ...cliente, id, updatedAt: new Date() })
+export async function updateCliente(id: string, cliente: Partial<CreateClienteDto>): Promise<Cliente> {
+  try {
+    const response = await api.put(`/cliente/${id}`, cliente)
+    return response.data
+  } catch (error) {
+    console.error("Error en updateCliente:", error)
+    throw error
+  }
 }
 
 export async function deleteCliente(id: string): Promise<void> {
-  // TODO: Reemplazar con: return fetch(`/api/clientes/${id}`, { method: 'DELETE' })
-  console.log("Eliminar cliente:", id)
-  return Promise.resolve()
+  try {
+    await api.delete(`/cliente/${id}`)
+  } catch (error) {
+    console.error("Error en deleteCliente:", error)
+    throw error
+  }
+}
+
+// ============= USUARIOS =============
+
+export async function getUsuarios(): Promise<Usuario[]> {
+  try {
+    const response = await api.get("/users")
+    return response.data
+  } catch (error) {
+    console.error("Error en getUsuarios:", error)
+    throw error
+  }
+}
+
+export async function getUsuarioById(id: string): Promise<Usuario | undefined> {
+  try {
+    const response = await api.get(`/users/${id}`)
+    return response.data
+  } catch (error) {
+    console.error("Error en getUsuarioById:", error)
+    throw error
+  }
+}
+
+export async function updateUsuario(usuario: Partial<Usuario>): Promise<Usuario> {
+  try {
+    const response = await api.put(`/users/${usuario.id}`, usuario)
+    return response.data
+  } catch (error) {
+    console.error("Error en updateUsuario:", error)
+    throw error
+  }
+}
+
+export async function getUsuarioActual(): Promise<Usuario | null> {
+  try {
+    // Asumiendo que hay un endpoint para obtener el usuario actual
+    const response = await api.get("/users/me")
+    return response.data
+  } catch (error) {
+    console.error("Error en getUsuarioActual:", error)
+    return null
+  }
+}
+
+export async function updateUsuarioActual(usuario: Partial<Usuario>): Promise<Usuario> {
+  try {
+    const response = await api.put("/users/me", usuario)
+    return response.data
+  } catch (error) {
+    console.error("Error en updateUsuarioActual:", error)
+    throw error
+  }
 }
 
 // ============= FORMAS DE PAGO =============
 
 export async function getFormasPago(): Promise<FormaPago[]> {
-  // TODO: Reemplazar con: return fetch('/api/formas-pago').then(res => res.json())
-  return Promise.resolve(mockFormasPago)
+  try {
+    const response = await api.get("/forma-pago")
+    return response.data
+  } catch (error) {
+    console.error("Error en getFormasPago:", error)
+    throw error
+  }
 }
 
 // ============= VENTAS =============
 
-export async function getVentas(): Promise<Venta[]> {
-  // TODO: Reemplazar con: return fetch('/api/ventas').then(res => res.json())
-  return Promise.resolve(mockVentas)
+export async function getVentas(): Promise<VentaListItem[]> {
+  try {
+    const response = await api.get("/venta")
+    return response.data
+  } catch (error) {
+    console.error("Error en getVentas:", error)
+    throw error
+  }
 }
 
-export async function getVentaById(id: string): Promise<Venta | undefined> {
-  // TODO: Reemplazar con: return fetch(`/api/ventas/${id}`).then(res => res.json())
-  return Promise.resolve(mockVentas.find((v) => v.id === id))
+export async function getVentaById(id: number): Promise<VentaDetallada> {
+  try {
+    const response = await api.get(`/venta/${id}`)
+    return response.data
+  } catch (error) {
+    console.error("Error en getVentaById:", error)
+    throw error
+  }
 }
 
-export async function createVenta(venta: Omit<Venta, "id" | "createdAt" | "updatedAt">): Promise<Venta> {
-  // TODO: Reemplazar con: return fetch('/api/ventas', { method: 'POST', body: JSON.stringify(venta) })
-  console.log("Crear venta:", venta)
-  const now = new Date()
-  return Promise.resolve({ ...venta, id: Date.now().toString(), createdAt: now, updatedAt: now })
+export async function createVenta(venta: CreateVentaDto): Promise<any> {
+  try {
+    const response = await api.post("/venta", venta)
+    return response.data
+  } catch (error) {
+    console.error("Error en createVenta:", error)
+    throw error
+  }
 }
 
-export async function updateVenta(id: string, venta: Partial<Venta>): Promise<Venta> {
-  // TODO: Reemplazar con: return fetch(`/api/ventas/${id}`, { method: 'PUT', body: JSON.stringify(venta) })
-  console.log("Actualizar venta:", id, venta)
-  return Promise.resolve({ ...mockVentas[0], ...venta, id, updatedAt: new Date() })
+export async function updateVenta(id: number, venta: Partial<CreateVentaDto>): Promise<any> {
+  try {
+    const response = await api.put(`/venta/${id}`, venta)
+    return response.data
+  } catch (error) {
+    console.error("Error en updateVenta:", error)
+    throw error
+  }
 }
 
-export async function deleteVenta(id: string): Promise<void> {
-  // TODO: Reemplazar con: return fetch(`/api/ventas/${id}`, { method: 'DELETE' })
-  console.log("Eliminar venta:", id)
-  return Promise.resolve()
-}
-
-// ============= USUARIO ACTUAL =============
-
-export async function getUsuarioActual(): Promise<Usuario> {
-  // TODO: Reemplazar con: return fetch('/api/auth/me').then(res => res.json())
-  return Promise.resolve(mockUsuarioActual)
-}
-
-export async function updateUsuarioActual(usuario: Partial<Usuario>): Promise<Usuario> {
-  // TODO: Reemplazar con: return fetch('/api/auth/me', { method: 'PUT', body: JSON.stringify(usuario) })
-  console.log("Actualizar usuario actual:", usuario)
-  return Promise.resolve({ ...mockUsuarioActual, ...usuario })
+export async function deleteVenta(id: number): Promise<void> {
+  try {
+    await api.delete(`/venta/${id}`)
+  } catch (error) {
+    console.error("Error en deleteVenta:", error)
+    throw error
+  }
 }

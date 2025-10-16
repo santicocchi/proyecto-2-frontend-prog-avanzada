@@ -8,98 +8,97 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Upload, Plus } from "lucide-react"
-import { MarcaForm, type MarcaFormData } from "./marca-form"
-import { LineaForm, type LineaFormData } from "./linea-form"
-import type { Marca, Proveedor, Linea } from "@/lib/mock-data"
-import { createMarca, createLinea, getLineasByMarca } from "@/lib/api-service"
+import { Upload, Plus, Loader2 } from "lucide-react"
+import { MarcaForm } from "./marca-form"
+import { LineaForm } from "./linea-form"
+import { getMarcas, getLineas, createProducto, type CreateProductoDto } from "@/lib/api-service"
 
-interface ProductoFormProps {
-  marcas: Marca[]
-  proveedores: Proveedor[]
-  onSubmit?: (data: ProductoFormData) => void
-  initialData?: ProductoFormData
-  isEditing?: boolean
-}
-
-export interface ProductoFormData {
-  nombre: string
-  descripcion: string
-  imagen?: File | string
-  marcaId: string
-  lineaId: string
-  proveedorId: string
-  precio: number
-}
-
-export function ProductoForm({ marcas, proveedores, onSubmit, initialData, isEditing = false }: ProductoFormProps) {
-  const [formData, setFormData] = React.useState<ProductoFormData>(
-    initialData || {
-      nombre: "",
-      descripcion: "",
-      marcaId: "",
-      lineaId: "",
-      proveedorId: "",
-      precio: 0,
-    },
-  )
-
-  const [lineasDisponibles, setLineasDisponibles] = React.useState<Linea[]>([])
+export function ProductoForm() {
+  const [loading, setLoading] = React.useState(false)
+  const [marcas, setMarcas] = React.useState<any[]>([])
+  const [lineas, setLineas] = React.useState<any[]>([])
   const [showMarcaModal, setShowMarcaModal] = React.useState(false)
   const [showLineaModal, setShowLineaModal] = React.useState(false)
-  const [localMarcas, setLocalMarcas] = React.useState<Marca[]>(marcas)
+
+  const [formData, setFormData] = React.useState({
+    nombre: "",
+    descripcion: "",
+    precio: 0,
+    stock: 0,
+    marcaId: "",
+    lineaId: "",
+  })
 
   React.useEffect(() => {
-    if (formData.marcaId) {
-      getLineasByMarca(formData.marcaId).then(setLineasDisponibles)
-    } else {
-      setLineasDisponibles([])
-      setFormData((prev) => ({ ...prev, lineaId: "" }))
-    }
-  }, [formData.marcaId])
+    loadMarcas()
+    loadLineas()
+  }, [])
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    onSubmit?.(formData)
-  }
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      setFormData({ ...formData, imagen: file })
-    }
-  }
-
-  const handleCreateMarca = async (marcaData: MarcaFormData) => {
-  try {
-    const newMarca = await createMarca({
-      ...marcaData,
-      logo: undefined // or whatever the default value for logo should be
-    });
-    // rest of the code
-  } catch (error) {
-    console.error("Error al crear marca:", error);
-  }
-};
-
-  const handleCreateLinea = async (lineaData: LineaFormData) => {
+  const loadMarcas = async () => {
     try {
-      const newLinea = await createLinea(lineaData)
-      setLineasDisponibles([...lineasDisponibles, newLinea])
-      setFormData({ ...formData, lineaId: newLinea.id })
-      setShowLineaModal(false)
+      const data = await getMarcas()
+      setMarcas(data)
     } catch (error) {
-      console.error("Error al crear línea:", error)
+      console.error("Error al cargar marcas:", error)
     }
+  }
+
+  const loadLineas = async () => {
+    try {
+      const data = await getLineas()
+      setLineas(data)
+    } catch (error) {
+      console.error("Error al cargar líneas:", error)
+    }
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
+
+    try {
+      const productoDto: CreateProductoDto = {
+        nombre: formData.nombre,
+        descripcion: formData.descripcion,
+        precio: formData.precio,
+        stock: formData.stock,
+        marcaId: Number.parseInt(formData.marcaId),
+        lineaId: Number.parseInt(formData.lineaId),
+      }
+
+      await createProducto(productoDto)
+      alert("Producto registrado exitosamente")
+      setFormData({
+        nombre: "",
+        descripcion: "",
+        precio: 0,
+        stock: 0,
+        marcaId: "",
+        lineaId: "",
+      })
+    } catch (error) {
+      console.error("Error al registrar producto:", error)
+      alert("Error al registrar producto")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleMarcaSuccess = async () => {
+    await loadMarcas()
+    setShowMarcaModal(false)
+  }
+
+  const handleLineaSuccess = async () => {
+    await loadLineas()
+    setShowLineaModal(false)
   }
 
   return (
     <Card className="max-w-2xl mx-auto">
       <CardHeader>
-        <CardTitle>{isEditing ? "Editar Producto" : "Registrar Nuevo Producto"}</CardTitle>
-        <CardDescription>
-          {isEditing ? "Modifica los datos del producto" : "Completa los datos para registrar un nuevo producto"}
-        </CardDescription>
+        <CardTitle>Registrar Nuevo Producto</CardTitle>
+        <CardDescription>Completa los datos para registrar un nuevo producto</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -133,34 +132,10 @@ export function ProductoForm({ marcas, proveedores, onSubmit, initialData, isEdi
                 <label htmlFor="imagen" className="cursor-pointer">
                   <Upload className="mr-2 h-4 w-4" />
                   Seleccionar Imagen
-                  <input id="imagen" type="file" accept="image/*" className="sr-only" onChange={handleFileChange} />
+                  <input id="imagen" type="file" accept="image/*" className="sr-only" />
                 </label>
               </Button>
-              {formData.imagen && (
-                <span className="text-sm text-muted-foreground">
-                  {formData.imagen instanceof File ? formData.imagen.name : "Imagen cargada"}
-                </span>
-              )}
             </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="proveedor">Proveedor *</Label>
-            <Select
-              value={formData.proveedorId}
-              onValueChange={(value) => setFormData({ ...formData, proveedorId: value })}
-            >
-              <SelectTrigger id="proveedor">
-                <SelectValue placeholder="Selecciona un proveedor" />
-              </SelectTrigger>
-              <SelectContent>
-                {proveedores.map((proveedor) => (
-                  <SelectItem key={proveedor.id} value={proveedor.id}>
-                    {proveedor.nombre}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
           </div>
 
           <div className="space-y-2">
@@ -177,7 +152,7 @@ export function ProductoForm({ marcas, proveedores, onSubmit, initialData, isEdi
                   <DialogHeader>
                     <DialogTitle>Crear Nueva Marca</DialogTitle>
                   </DialogHeader>
-                  <MarcaForm onSubmit={handleCreateMarca} />
+                  <MarcaForm onSuccess={handleMarcaSuccess} onCancel={() => setShowMarcaModal(false)} />
                 </DialogContent>
               </Dialog>
             </div>
@@ -186,8 +161,8 @@ export function ProductoForm({ marcas, proveedores, onSubmit, initialData, isEdi
                 <SelectValue placeholder="Selecciona una marca" />
               </SelectTrigger>
               <SelectContent>
-                {localMarcas.map((marca) => (
-                  <SelectItem key={marca.id} value={marca.id}>
+                {marcas.map((marca) => (
+                  <SelectItem key={marca.id} value={marca.id.toString()}>
                     {marca.nombre}
                   </SelectItem>
                 ))}
@@ -200,13 +175,7 @@ export function ProductoForm({ marcas, proveedores, onSubmit, initialData, isEdi
               <Label htmlFor="linea">Línea *</Label>
               <Dialog open={showLineaModal} onOpenChange={setShowLineaModal}>
                 <DialogTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="link"
-                    size="sm"
-                    className="h-auto p-0 text-primary"
-                    disabled={!formData.marcaId}
-                  >
+                  <Button type="button" variant="link" size="sm" className="h-auto p-0 text-primary">
                     <Plus className="mr-1 h-3 w-3" />
                     Crear Línea
                   </Button>
@@ -215,25 +184,17 @@ export function ProductoForm({ marcas, proveedores, onSubmit, initialData, isEdi
                   <DialogHeader>
                     <DialogTitle>Crear Nueva Línea</DialogTitle>
                   </DialogHeader>
-                  <LineaForm
-                    marcas={localMarcas}
-                    onSubmit={handleCreateLinea}
-                    initialData={{ marcaId: formData.marcaId, nombre: "", descripcion: "" }}
-                  />
+                  <LineaForm onSuccess={handleLineaSuccess} onCancel={() => setShowLineaModal(false)} />
                 </DialogContent>
               </Dialog>
             </div>
-            <Select
-              value={formData.lineaId}
-              onValueChange={(value) => setFormData({ ...formData, lineaId: value })}
-              disabled={!formData.marcaId}
-            >
+            <Select value={formData.lineaId} onValueChange={(value) => setFormData({ ...formData, lineaId: value })}>
               <SelectTrigger id="linea">
-                <SelectValue placeholder={formData.marcaId ? "Selecciona una línea" : "Primero selecciona una marca"} />
+                <SelectValue placeholder="Selecciona una línea" />
               </SelectTrigger>
               <SelectContent>
-                {lineasDisponibles.map((linea) => (
-                  <SelectItem key={linea.id} value={linea.id}>
+                {lineas.map((linea) => (
+                  <SelectItem key={linea.id} value={linea.id.toString()}>
                     {linea.nombre}
                   </SelectItem>
                 ))}
@@ -241,28 +202,50 @@ export function ProductoForm({ marcas, proveedores, onSubmit, initialData, isEdi
             </Select>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="precio">Precio *</Label>
-            <Input
-              id="precio"
-              type="number"
-              min="0"
-              step="0.01"
-              placeholder="0.00"
-              value={formData.precio || ""}
-              onChange={(e) => setFormData({ ...formData, precio: Number.parseFloat(e.target.value) || 0 })}
-              required
-            />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="precio">Precio *</Label>
+              <Input
+                id="precio"
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="0.00"
+                value={formData.precio || ""}
+                onChange={(e) => setFormData({ ...formData, precio: Number.parseFloat(e.target.value) || 0 })}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="stock">Stock *</Label>
+              <Input
+                id="stock"
+                type="number"
+                min="0"
+                placeholder="0"
+                value={formData.stock || ""}
+                onChange={(e) => setFormData({ ...formData, stock: Number.parseInt(e.target.value) || 0 })}
+                required
+              />
+            </div>
           </div>
 
-          <div className="flex gap-4 pt-4">
-            <Button type="submit" className="flex-1" disabled={!formData.marcaId || !formData.lineaId}>
-              {isEditing ? "Guardar Cambios" : "Guardar Producto"}
-            </Button>
-            <Button type="button" variant="outline" className="flex-1 bg-transparent">
-              Cancelar
-            </Button>
-          </div>
+          <Button
+            type="submit"
+            className="w-full bg-[#2B3A8F] hover:bg-[#1e2870]"
+            size="lg"
+            disabled={loading || !formData.marcaId || !formData.lineaId}
+          >
+            {loading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Guardando...
+              </>
+            ) : (
+              "Guardar Producto"
+            )}
+          </Button>
         </form>
       </CardContent>
     </Card>

@@ -7,42 +7,21 @@ import { MarcaTable } from "@/components/marca-table"
 import { Button } from "@/components/ui/button"
 import { Plus } from "lucide-react"
 import Link from "next/link"
-import { getMarcas, deleteMarca } from "@/lib/api-service"
-import type { Marca } from "@/lib/mock-data"
-import WithAuth from "@/components/auth/withAuth"
-import RoleGuard from "@/components/auth/RoleGuard"
+import type { Marca } from "@/lib/api-service"
 
 export default function ConsultarMarcasPage() {
-  const [marcas, setMarcas] = React.useState<Marca[]>([])
-
-  React.useEffect(() => {
-    getMarcas().then(setMarcas)
-  }, [])
-
-  const handleDelete = async (id: string) => {
-    if (confirm("¿Estás seguro de que deseas eliminar esta marca?")) {
-      try {
-        await deleteMarca(id)
-        setMarcas(marcas.filter((m) => m.id !== id))
-        alert("Marca eliminada exitosamente")
-      } catch (error) {
-        console.error("Error al eliminar marca:", error)
-        alert("Error al eliminar la marca")
-      }
-    }
-  }
+  const [refreshTrigger, setRefreshTrigger] = React.useState(0)
 
   const handleEdit = (marca: Marca) => {
     alert(`Editar marca: ${marca.nombre} (funcionalidad pendiente)`)
   }
 
   const handleView = (marca: Marca) => {
-    alert(`Ver detalles de: ${marca.nombre}\n\nEmail: ${marca.email}\n\nDescripción: ${marca.descripcion}`)
+    const lineasText = marca.lineas?.map((l) => l.nombre).join(", ") || "Sin líneas"
+    alert(`Ver detalles de: ${marca.nombre}\n\nID: ${marca.id}\n\nLíneas: ${lineasText}`)
   }
 
   return (
-    <WithAuth>
-          <RoleGuard allowedRoles={['administrador', 'vendedor']} >
     <div className="min-h-screen bg-background">
       <AppHeader showBreadcrumbs />
       <div className="flex">
@@ -60,11 +39,9 @@ export default function ConsultarMarcasPage() {
               </Link>
             </Button>
           </div>
-          <MarcaTable marcas={marcas} onEdit={handleEdit} onDelete={handleDelete} onView={handleView} />
+          <MarcaTable onEdit={handleEdit} onView={handleView} refreshTrigger={refreshTrigger} />
         </main>
       </div>
     </div>
-    </RoleGuard>
-    </WithAuth>
   )
 }

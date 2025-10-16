@@ -4,51 +4,70 @@ import * as React from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Upload } from "lucide-react"
+import { Checkbox } from "@/components/ui/checkbox"
+import { createMarca, getLineas, type CreateMarcaDto, type Linea } from "@/lib/api-service"
+import { useToast } from "@/hooks/use-toast"
 
 interface MarcaFormProps {
-  onSubmit?: (data: MarcaFormData) => void
-  initialData?: MarcaFormData
-  isEditing?: boolean
+  onSuccess?: () => void
+  onCancel?: () => void
 }
 
-export interface MarcaFormData {
-  nombre: string
-  email: string
-  descripcion: string
-  logo?: File | string
-}
+export function MarcaForm({ onSuccess, onCancel }: MarcaFormProps) {
+  const { toast } = useToast()
+  const [loading, setLoading] = React.useState(false)
+  const [lineas, setLineas] = React.useState<Linea[]>([])
+  const [formData, setFormData] = React.useState<CreateMarcaDto>({
+    nombre: "",
+    lineas: [],
+  })
 
-export function MarcaForm({ onSubmit, initialData, isEditing = false }: MarcaFormProps) {
-  const [formData, setFormData] = React.useState<MarcaFormData>(
-    initialData || {
-      nombre: "",
-      email: "",
-      descripcion: "",
-    },
-  )
+  React.useEffect(() => {
+    getLineas()
+      .then(setLineas)
+      .catch((error) => {
+        console.error("Error al cargar líneas:", error)
+      })
+  }, [])
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    onSubmit?.(formData)
+    setLoading(true)
+
+    try {
+      await createMarca(formData)
+      toast({
+        title: "Marca creada",
+        description: "La marca se ha registrado correctamente.",
+      })
+      onSuccess?.()
+    } catch (error) {
+      console.error("Error al crear marca:", error)
+      toast({
+        title: "Error",
+        description: "No se pudo crear la marca. Intenta nuevamente.",
+        variant: "destructive",
+      })
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      setFormData({ ...formData, logo: file })
-    }
+  const handleLineaToggle = (lineaId: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      lineas: prev.lineas?.includes(lineaId)
+        ? prev.lineas.filter((id) => id !== lineaId)
+        : [...(prev.lineas || []), lineaId],
+    }))
   }
 
   return (
     <Card className="max-w-2xl mx-auto">
       <CardHeader>
-        <CardTitle>{isEditing ? "Editar Marca" : "Registrar Nueva Marca"}</CardTitle>
-        <CardDescription>
-          {isEditing ? "Modifica los datos de la marca" : "Completa los datos para registrar una nueva marca"}
-        </CardDescription>
+        <CardTitle>Registrar Nueva Marca</CardTitle>
+        <CardDescription>Completa los datos para registrar una nueva marca</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -60,57 +79,46 @@ export function MarcaForm({ onSubmit, initialData, isEditing = false }: MarcaFor
               value={formData.nombre}
               onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
               required
+              disabled={loading}
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="email">Email de Contacto *</Label>
-            <Input
-              id="email"
-              type="email"
-              placeholder="contacto@marca.com"
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              required
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="descripcion">Descripción *</Label>
-            <Textarea
-              id="descripcion"
-              placeholder="Describe la marca, su historia, productos principales..."
-              value={formData.descripcion}
-              onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })}
-              rows={4}
-              required
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="logo">Logo de la Marca</Label>
-            <div className="flex items-center gap-4">
-              <Button type="button" variant="outline" className="relative bg-transparent" asChild>
-                <label htmlFor="logo" className="cursor-pointer">
-                  <Upload className="mr-2 h-4 w-4" />
-                  Seleccionar Imagen
-                  <input id="logo" type="file" accept="image/*" className="sr-only" onChange={handleFileChange} />
-                </label>
-              </Button>
-              {formData.logo && (
-                <span className="text-sm text-muted-foreground">
-                  {formData.logo instanceof File ? formData.logo.name : "Imagen cargada"}
-                </span>
-              )}
+          {lineas.length > 0 && (
+            <div className="space-y-2">
+              <Label>Líneas Asociadas (opcional)</Label>
+              <div className="space-y-2 border rounded-lg p-4">
+                {lineas.map((linea) => (
+                  <div key={linea.id} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`linea-${linea.id}`}
+                      checked={formData.lineas?.includes(linea.id)}
+                      onCheckedChange={() => handleLineaToggle(linea.id)}
+                      disabled={loading}
+                    />
+                    <label
+                      htmlFor={`linea-${linea.id}`}
+                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                    >
+                      {linea.nombre}
+                    </label>
+                  </div>
+                ))}
+              </div>
+              <p className="text-sm text-muted-foreground">Selecciona las líneas que pertenecen a esta marca</p>
             </div>
-            <p className="text-sm text-muted-foreground">Formatos aceptados: JPG, PNG, SVG (máx. 2MB)</p>
-          </div>
+          )}
 
           <div className="flex gap-4 pt-4">
-            <Button type="submit" className="flex-1">
-              {isEditing ? "Guardar Cambios" : "Registrar Marca"}
+            <Button type="submit" className="flex-1" disabled={loading}>
+              {loading ? "Guardando..." : "Registrar Marca"}
             </Button>
-            <Button type="button" variant="outline" className="flex-1 bg-transparent">
+            <Button
+              type="button"
+              variant="outline"
+              className="flex-1 bg-transparent"
+              onClick={onCancel}
+              disabled={loading}
+            >
               Cancelar
             </Button>
           </div>

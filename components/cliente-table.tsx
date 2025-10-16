@@ -5,8 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Pencil, Trash2, Eye, Search } from "lucide-react"
-import { Cliente, mockClientes } from "@/lib/mock-data"
-import { getClientes } from "@/lib/api-service"
+import { getClientes, type Cliente } from "@/lib/api-service"
 
 export function ClienteTable() {
   const [clientes, setClientes] = React.useState<Cliente[]>([])
@@ -23,7 +22,6 @@ export function ClienteTable() {
       setClientes(data)
     } catch (error) {
       console.error("Error al cargar clientes:", error)
-      setClientes(mockClientes)
     } finally {
       setLoading(false)
     }
@@ -33,11 +31,11 @@ export function ClienteTable() {
     (cliente) =>
       cliente.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
       cliente.apellido.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      cliente.numeroDocumento.includes(searchTerm),
+      cliente.num_documento.includes(searchTerm),
   )
 
-  const formatDate = (date: Date) => {
-    return new Date(date).toLocaleDateString("es-AR")
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("es-AR")
   }
 
   return (
@@ -87,8 +85,8 @@ export function ClienteTable() {
                   <TableCell className="font-mono text-sm">{cliente.id}</TableCell>
                   <TableCell>{cliente.nombre}</TableCell>
                   <TableCell>{cliente.apellido}</TableCell>
-                  <TableCell>{cliente.tipoDocumento}</TableCell>
-                  <TableCell className="font-mono">{cliente.numeroDocumento}</TableCell>
+                  <TableCell>{cliente.tipo_documento}</TableCell>
+                  <TableCell className="font-mono">{cliente.num_documento}</TableCell>
                   <TableCell>{cliente.telefono}</TableCell>
                   <TableCell>{formatDate(cliente.createdAt)}</TableCell>
                   <TableCell>

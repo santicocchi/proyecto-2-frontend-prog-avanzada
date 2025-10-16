@@ -4,50 +4,37 @@ import * as React from "react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Pencil, Trash2, Eye, Filter, Search, Barcode } from "lucide-react"
-import type { Producto, Marca, Linea, Proveedor } from "@/lib/mock-data"
+import { getProductos, type ProductoBackend } from "@/lib/api-service"
 
-interface ProductoTableProps {
-  productos: Producto[]
-  marcas: Marca[]
-  lineas: Linea[]
-  proveedores: Proveedor[]
-  onEdit?: (producto: Producto) => void
-  onDelete?: (id: string) => void
-  onView?: (producto: Producto) => void
-}
-
-export function ProductoTable({
-  productos,
-  marcas,
-  lineas,
-  proveedores,
-  onEdit,
-  onDelete,
-  onView,
-}: ProductoTableProps) {
+export function ProductoTable() {
+  const [productos, setProductos] = React.useState<ProductoBackend[]>([])
   const [searchNombre, setSearchNombre] = React.useState("")
   const [searchCodigo, setSearchCodigo] = React.useState("")
   const [showFilterModal, setShowFilterModal] = React.useState(false)
+  const [loading, setLoading] = React.useState(true)
 
-  const getMarcaNombre = (marcaId: string) => marcas.find((m) => m.id === marcaId)?.nombre || "-"
-  const getLineaNombre = (lineaId: string) => lineas.find((l) => l.id === lineaId)?.nombre || "-"
-  const getProveedorNombre = (proveedorId: string) => proveedores.find((p) => p.id === proveedorId)?.nombre || "-"
+  React.useEffect(() => {
+    loadProductos()
+  }, [])
+
+  const loadProductos = async () => {
+    try {
+      const data = await getProductos()
+      setProductos(data)
+    } catch (error) {
+      console.error("Error al cargar productos:", error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const filteredProductos = productos.filter((producto) => {
     const matchNombre = producto.nombre.toLowerCase().includes(searchNombre.toLowerCase())
-    const matchCodigo = producto.codigo.includes(searchCodigo)
-    return matchNombre && matchCodigo
+    return matchNombre
   })
-
-  if (productos.length === 0) {
-    return (
-      <div className="text-center py-12 text-muted-foreground">
-        <p>No hay productos registrados</p>
-      </div>
-    )
-  }
 
   return (
     <div className="space-y-4">
@@ -86,6 +73,7 @@ export function ProductoTable({
             value={searchCodigo}
             onChange={(e) => setSearchCodigo(e.target.value)}
             className="pl-9"
+            disabled
           />
         </div>
       </div>
@@ -94,68 +82,69 @@ export function ProductoTable({
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/50">
-              <TableHead className="font-semibold">Código</TableHead>
+              <TableHead className="font-semibold">ID</TableHead>
               <TableHead className="font-semibold">Nombre</TableHead>
               <TableHead className="font-semibold">Marca</TableHead>
-              <TableHead className="font-semibold">Línea</TableHead>
-              <TableHead className="font-semibold">Proveedor</TableHead>
+              <TableHead className="font-semibold">Líneas</TableHead>
               <TableHead className="font-semibold">Stock</TableHead>
               <TableHead className="font-semibold">Precio</TableHead>
               <TableHead className="text-right font-semibold">Acciones</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredProductos.map((producto) => (
-              <TableRow key={producto.id}>
-                <TableCell className="font-mono text-sm">{producto.codigo}</TableCell>
-                <TableCell className="font-medium">{producto.nombre}</TableCell>
-                <TableCell>{getMarcaNombre(producto.marcaId)}</TableCell>
-                <TableCell>{getLineaNombre(producto.lineaId)}</TableCell>
-                <TableCell>{getProveedorNombre(producto.proveedorId)}</TableCell>
-                <TableCell>X {producto.stock}</TableCell>
-                <TableCell>${producto.precio}</TableCell>
-                <TableCell className="text-right">
-                  <div className="flex justify-end gap-2">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => onView?.(producto)}
-                      title="Ver detalles"
-                      className="h-8 w-8"
-                    >
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => onEdit?.(producto)}
-                      title="Editar"
-                      className="h-8 w-8"
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => onDelete?.(producto.id)}
-                      title="Eliminar"
-                      className="h-8 w-8 text-destructive hover:text-destructive"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
+            {loading ? (
+              <TableRow>
+                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                  Cargando productos...
                 </TableCell>
               </TableRow>
-            ))}
+            ) : filteredProductos.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                  No se encontraron productos
+                </TableCell>
+              </TableRow>
+            ) : (
+              filteredProductos.map((producto) => (
+                <TableRow key={producto.id}>
+                  <TableCell className="font-mono text-sm">{producto.id}</TableCell>
+                  <TableCell className="font-medium">{producto.nombre}</TableCell>
+                  <TableCell>{producto.marca.nombre}</TableCell>
+                  <TableCell>
+                    <div className="flex flex-wrap gap-1">
+                      {producto.linea.map((l) => (
+                        <Badge key={l.id} variant="secondary" className="text-xs">
+                          {l.nombre}
+                        </Badge>
+                      ))}
+                    </div>
+                  </TableCell>
+                  <TableCell>X {producto.stock}</TableCell>
+                  <TableCell>${Number.parseFloat(producto.precio_sin_impuesto).toFixed(2)}</TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-2">
+                      <Button variant="ghost" size="icon" title="Ver detalles" className="h-8 w-8">
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" title="Editar" className="h-8 w-8">
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        title="Eliminar"
+                        className="h-8 w-8 text-destructive hover:text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
       </div>
-
-      {filteredProductos.length === 0 && productos.length > 0 && (
-        <div className="text-center py-8 text-muted-foreground">
-          <p>No se encontraron productos con los filtros aplicados</p>
-        </div>
-      )}
     </div>
   )
 }
