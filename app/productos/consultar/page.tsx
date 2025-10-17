@@ -7,42 +7,13 @@ import { QuickNavLeft } from "@/components/quick-nav-left"
 import { ProductoTable } from "@/components/producto-table"
 import { Button } from "@/components/ui/button"
 import { Plus } from "lucide-react"
-import { getProductos, getMarcas, getLineas, getProveedores } from "@/lib/api-service"
-import type { Producto, Marca, Linea, Proveedor } from "@/lib/mock-data"
 import WithAuth from "@/components/auth/withAuth"
 import RoleGuard from "@/components/auth/RoleGuard"
 
 export default function ConsultarProductosPage() {
-  const [productos, setProductos] = React.useState<Producto[]>([])
-  const [marcas, setMarcas] = React.useState<Marca[]>([])
-  const [lineas, setLineas] = React.useState<Linea[]>([])
-  const [proveedores, setProveedores] = React.useState<Proveedor[]>([])
-
-  React.useEffect(() => {
-    getProductos().then(setProductos)
-    getMarcas().then(setMarcas)
-    getLineas().then(setLineas)
-    getProveedores().then(setProveedores)
-  }, [])
-
-  const handleEdit = (producto: Producto) => {
-    console.log("Editar producto:", producto)
-    // TODO: Implementar edición
-  }
-
-  const handleDelete = (id: string) => {
-    console.log("Eliminar producto:", id)
-    // TODO: Implementar eliminación
-  }
-
-  const handleView = (producto: Producto) => {
-    console.log("Ver producto:", producto)
-    // TODO: Implementar vista detallada
-  }
-
   return (
     <WithAuth>
-      <RoleGuard allowedRoles={['administrador', 'vendedor']} >
+      <RoleGuard allowedRoles={['dueño', 'vendedor']} >
         <div className="min-h-screen bg-background">
           <AppHeader showBreadcrumbs />
           <div className="flex">
@@ -60,15 +31,7 @@ export default function ConsultarProductosPage() {
                   </Link>
                 </Button>
               </div>
-              <ProductoTable
-                productos={productos}
-                marcas={marcas}
-                lineas={lineas}
-                proveedores={proveedores}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
-                onView={handleView}
-              />
+              <ProductoTable />
             </main>
           </div>
         </div>

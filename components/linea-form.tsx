@@ -22,6 +22,7 @@ export function LineaForm({ onSuccess, onCancel }: LineaFormProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    e.stopPropagation()
     setLoading(true)
 
     try {
