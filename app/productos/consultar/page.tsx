@@ -13,7 +13,7 @@ import RoleGuard from "@/components/auth/RoleGuard"
 export default function ConsultarProductosPage() {
   return (
     <WithAuth>
-      <RoleGuard allowedRoles={['dueño', 'vendedor']} >
+      <RoleGuard allowedRoles={['dueño', 'gerente']} >
         <div className="min-h-screen bg-background">
           <AppHeader showBreadcrumbs />
           <div className="flex">

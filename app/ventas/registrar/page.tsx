@@ -7,7 +7,7 @@ import { VentaForm } from "@/components/venta-form"
 export default function RegistrarVentaPage() {
   return (
     <WithAuth>
-      <RoleGuard allowedRoles={['dueño', 'vendedor']} >
+      <RoleGuard allowedRoles={['dueño', 'empleado']} >
         <div className="min-h-screen bg-background">
           <AppHeader showBreadcrumbs />
           <div className="flex">

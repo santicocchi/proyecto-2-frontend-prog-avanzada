@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { getProveedores } from "@/lib/api-service";
 import type { Proveedor } from "@/lib/mock-data";
-import WithAuth from "@/components/auth/WithAuth";
+import WithAuth from "@/components/auth/withAuth";
 import RoleGuard from "@/components/auth/RoleGuard";
 
 export default function ConsultarProveedoresPage() {
@@ -36,7 +36,7 @@ export default function ConsultarProveedoresPage() {
 
   return (
     <WithAuth>
-      <RoleGuard allowedRoles={["dueño", "vendedor"]}>
+      <RoleGuard allowedRoles={["dueño", "gerente"]}>
         <div className="min-h-screen bg-background">
           <AppHeader showBreadcrumbs />
           <div className="flex">

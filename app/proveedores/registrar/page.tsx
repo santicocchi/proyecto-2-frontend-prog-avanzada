@@ -20,7 +20,7 @@ export default function RegistrarProveedorPage() {
 
   return (
     <WithAuth>
-          <RoleGuard allowedRoles={['dueño', 'vendedor']} >
+          <RoleGuard allowedRoles={['dueño']} >
     <div className="min-h-screen bg-background">
       <AppHeader showBreadcrumbs />
       <div className="flex">

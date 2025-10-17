@@ -47,7 +47,7 @@ export default function ConsultarLineasPage() {
 
   return (
     <WithAuth>
-      <RoleGuard allowedRoles={['dueño', 'vendedor']} >
+      <RoleGuard allowedRoles={['dueño','gerente']} >
         <div className="min-h-screen bg-background">
           <AppHeader showBreadcrumbs />
           <div className="flex">

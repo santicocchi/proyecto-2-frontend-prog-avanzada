@@ -14,8 +14,6 @@ export default function ClientRedirect() {
     useEffect(() => {
         if (hasRole("dueño")) {
             router.push("/dashboard");
-        } else if (hasRole("vendedor")) {
-            router.push("/dashboard");
         } else {
             router.push("/login");
         }
