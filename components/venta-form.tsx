@@ -112,8 +112,12 @@ export function VentaForm() {
     setLoading(true)
 
     try {
+      const [year, month, day] = formData.fechaVenta.split("-").map(Number)
+      const fechaLocal = new Date(year, month - 1, day, 15, 30, 0) // usa la hora que quieras
+      const fechaISO = fechaLocal.toISOString()
+
       const ventaData: CreateVentaDto = {
-        fecha_venta: new Date(formData.fechaVenta).toISOString(),
+        fecha_venta: fechaISO,
         clienteId: Number(formData.clienteId),
         formaPagoId: Number(formData.formaPagoId),
         userId: Number(formData.userId),
@@ -140,6 +144,8 @@ export function VentaForm() {
       setLoading(false)
     }
   }
+
+
 
   return (
     <Card className="max-w-4xl mx-auto">

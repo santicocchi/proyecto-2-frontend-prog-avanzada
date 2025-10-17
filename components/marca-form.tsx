@@ -33,6 +33,7 @@ export function MarcaForm({ onSuccess, onCancel }: MarcaFormProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    e.stopPropagation()
     setLoading(true)
 
     try {

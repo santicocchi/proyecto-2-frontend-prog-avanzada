@@ -1,33 +1,17 @@
-// import axios from "axios"
-
-// const api = axios.create({
-//   baseURL: process.env.NEXT_PUBLIC_API_URL,
-//   withCredentials: true,
-//   headers: {
-//     "Content-Type": "application/json",
-//     "x-admin-key": process.env.NEXT_PUBLIC_API_KEY
-//   },
-// })
-
-
-// export default api
-
 import axios from "axios"
 
-// Configuración base de la API
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL,
-  withCredentials: true,
+  baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001",
+  withCredentials: true, // Importante para manejar cookies de sesión
   headers: {
     "Content-Type": "application/json",
-    "x-admin-key": process.env.NEXT_PUBLIC_API_KEY
   },
 })
 
 // Interceptor para requests - agregar token si existe
 api.interceptors.request.use(
   (config) => {
-    // Aquí puedes agregar el token de autenticación si lo tienes
+    // Aquí puedes agregar el token de autenticación cuando implementes login
     // const token = localStorage.getItem('token')
     // if (token) {
     //   config.headers.Authorization = `Bearer ${token}`

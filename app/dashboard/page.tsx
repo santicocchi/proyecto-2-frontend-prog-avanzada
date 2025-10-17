@@ -18,6 +18,7 @@ import {
     UserCircle,
 } from "lucide-react"
 import WithAuth from "@/components/auth/withAuth"
+import RoleGuard from "@/components/auth/RoleGuard"
 import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 
@@ -163,9 +164,10 @@ export default async function DashboardPage() {
     }
     return (
         <WithAuth>
-            <div className="min-h-screen bg-background">
-                <AppHeader />
-                <main className="container mx-auto px-6 py-12">
+                <RoleGuard allowedRoles={['dueño']} >
+                <div className="min-h-screen bg-background">
+                    <AppHeader />
+                    <main className="container mx-auto px-6 py-12">
                     <div className="mb-12 text-center">
                         <h1 className="text-4xl font-bold mb-4 text-balance">Bienvenido al Sistema de Gestión</h1>
                         <p className="text-lg text-muted-foreground text-pretty">Selecciona una opción para comenzar</p>
@@ -196,6 +198,7 @@ export default async function DashboardPage() {
 
                 </main>
             </div>
+            </RoleGuard>
         </WithAuth>
     )
 }

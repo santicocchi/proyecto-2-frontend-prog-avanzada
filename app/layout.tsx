@@ -1,13 +1,16 @@
+
 import type React from "react"
 import type { Metadata } from "next"
 
 import { Analytics } from "@vercel/analytics/next"
+// @ts-ignore
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Suspense } from "react"
 
 import { Inter, Inter as V0_Font_Inter, Geist_Mono as V0_Font_Geist_Mono, Source_Serif_4 as V0_Font_Source_Serif_4 } from 'next/font/google'
 import { AuthProvider } from "@/components/auth/context/UserContext"
+import { Toaster } from "@/components/ui/toaster"
 
 
 const inter = Inter({
@@ -34,6 +37,7 @@ export default function RootLayout({
             <AuthProvider>
             {children}
             </AuthProvider>
+            <Toaster />
           </ThemeProvider>
           <Analytics />
         </Suspense>

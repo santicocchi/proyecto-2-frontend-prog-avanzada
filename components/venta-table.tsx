@@ -147,7 +147,11 @@ export function VentaTable() {
       </div>
 
       <Dialog open={showDetailModal} onOpenChange={setShowDetailModal}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent
+          className="!max-w-[90vw] !w-[90vw] !h-auto overflow-y-auto p-8 rounded-xl"
+        >
+
+
           <DialogHeader>
             <DialogTitle>Detalle de Venta #{selectedVenta?.id}</DialogTitle>
           </DialogHeader>
@@ -155,19 +159,19 @@ export function VentaTable() {
           {loadingDetail ? (
             <div className="py-8 text-center text-muted-foreground">Cargando detalles...</div>
           ) : selectedVenta ? (
-            <div className="space-y-6">
+            <div className="space-y-2">
               {/* Información general */}
-              <div className="grid grid-cols-2 gap-4 p-4 bg-muted/50 rounded-lg">
+              <div className="grid grid-cols-4 gap-2 p-4 bg-muted/50 rounded-lg">
                 <div>
                   <p className="text-sm text-muted-foreground">Cliente</p>
                   <p className="font-semibold">{selectedVenta.cliente}</p>
-                  <p className="text-sm text-muted-foreground mt-1">{selectedVenta.documento}</p>
-                  <p className="text-sm text-muted-foreground">{selectedVenta.telefono_cliente}</p>
+                  <p className="text-sm text-muted-foreground">Telefono: {selectedVenta.telefono_cliente}</p>
+                  <p className="text-sm text-muted-foreground">{selectedVenta.documento}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Fecha de Venta</p>
+                  <p className="text-sm text-muted-foreground">Fecha y Hora de Venta</p>
                   <p className="font-semibold">{formatDateTime(selectedVenta.fecha)}</p>
-                  <p className="text-sm text-muted-foreground mt-2">Responsable</p>
+                  <p className="text-sm text-muted-foreground mt-2">Responsable de la Venta</p>
                   <p className="font-semibold">{selectedVenta.responsable}</p>
                 </div>
                 <div>
@@ -177,7 +181,7 @@ export function VentaTable() {
                   </Badge>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Creado</p>
+                  <p className="text-sm text-muted-foreground">Fecha de Creacion</p>
                   <p className="text-sm">{formatDateTime(selectedVenta.createdAt)}</p>
                 </div>
               </div>
@@ -186,16 +190,16 @@ export function VentaTable() {
               <div>
                 <h3 className="font-semibold mb-3">Productos</h3>
                 <div className="rounded-lg border">
-                  <Table>
+                  <Table className="w-full border-collapse text-sm text-left [&_th]:px-2 [&_td]:px-2 [&_th]:py-2 [&_td]:py-1">
                     <TableHeader>
                       <TableRow>
                         <TableHead>Producto</TableHead>
                         <TableHead>Descripción</TableHead>
-                        <TableHead className="text-right">Precio</TableHead>
-                        <TableHead className="text-center">Impuesto</TableHead>
-                        <TableHead className="text-right">Precio + Imp.</TableHead>
-                        <TableHead className="text-center">Cant.</TableHead>
-                        <TableHead className="text-right">Subtotal</TableHead>
+                        <TableHead>Precio</TableHead>
+                        <TableHead>Impuesto</TableHead>
+                        <TableHead>Precio + Imp.</TableHead>
+                        <TableHead>Cant.</TableHead>
+                        <TableHead>Subtotal</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -203,22 +207,20 @@ export function VentaTable() {
                         <TableRow key={index}>
                           <TableCell className="font-medium">{detalle.producto}</TableCell>
                           <TableCell className="text-sm text-muted-foreground">{detalle.descripcion}</TableCell>
-                          <TableCell className="text-right">
-                            ${Number(detalle.precio_sin_impuesto).toFixed(2)}
-                          </TableCell>
-                          <TableCell className="text-center">{detalle.impuesto}%</TableCell>
-                          <TableCell className="text-right">${detalle.precio_impuesto.toFixed(2)}</TableCell>
-                          <TableCell className="text-center">{detalle.cantidad}</TableCell>
-                          <TableCell className="text-right font-semibold">
+                          <TableCell>${Number(detalle.precio_sin_impuesto).toFixed(2)}</TableCell>
+                          <TableCell>{detalle.impuesto}%</TableCell>
+                          <TableCell>${detalle.precio_impuesto.toFixed(2)}</TableCell>
+                          <TableCell>{detalle.cantidad}</TableCell>
+                          <TableCell className="font-semibold">
                             ${Number(detalle.subtotal).toFixed(2)}
                           </TableCell>
                         </TableRow>
                       ))}
                       <TableRow>
-                        <TableCell colSpan={6} className="text-right font-bold text-lg">
+                        <TableCell colSpan={6} className="text-left font-bold text-lg">
                           Total:
                         </TableCell>
-                        <TableCell className="text-right font-bold text-lg">
+                        <TableCell className="text-left font-bold text-lg">
                           ${selectedVenta.total.toLocaleString()}
                         </TableCell>
                       </TableRow>
@@ -226,6 +228,7 @@ export function VentaTable() {
                   </Table>
                 </div>
               </div>
+
             </div>
           ) : null}
         </DialogContent>

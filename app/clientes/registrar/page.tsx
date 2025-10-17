@@ -8,7 +8,7 @@ import { QuickNavLeft } from "@/components/quick-nav-left"
 export default function RegistrarClientePage() {
   return (
     <WithAuth>
-      <RoleGuard allowedRoles={["administrador", "vendedor"]} >
+      <RoleGuard allowedRoles={["dueño", "vendedor"]} >
         <div className="min-h-screen bg-background">
           <AppHeader showBreadcrumbs />
           <div className="flex">

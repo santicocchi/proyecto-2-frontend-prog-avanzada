@@ -12,7 +12,7 @@ export default function ClientRedirect() {
 
     //ejecutar redireccion segun tipo de usuario
     useEffect(() => {
-        if (hasRole("administrador")) {
+        if (hasRole("dueño")) {
             router.push("/dashboard");
         } else if (hasRole("vendedor")) {
             router.push("/dashboard");

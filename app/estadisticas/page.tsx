@@ -7,7 +7,7 @@ import { ScreenPlaceholder } from "@/components/screen-placeholder"
 export default function EstadisticasPage() {
   return (
     <WithAuth>
-      <RoleGuard allowedRoles={['administrador', 'vendedor']} >
+      <RoleGuard allowedRoles={['dueño']} >
         <div className="min-h-screen bg-background">
           <AppHeader showBreadcrumbs />
           <div className="flex">

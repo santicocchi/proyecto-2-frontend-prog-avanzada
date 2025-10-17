@@ -12,8 +12,10 @@ import { Upload, Plus, Loader2 } from "lucide-react"
 import { MarcaForm } from "./marca-form"
 import { LineaForm } from "./linea-form"
 import { getMarcas, getLineas, createProducto, type CreateProductoDto } from "@/lib/api-service"
+import { useToast } from "@/hooks/use-toast"
 
 export function ProductoForm() {
+  const { toast } = useToast()
   const [loading, setLoading] = React.useState(false)
   const [marcas, setMarcas] = React.useState<any[]>([])
   const [lineas, setLineas] = React.useState<any[]>([])
@@ -40,6 +42,11 @@ export function ProductoForm() {
       setMarcas(data)
     } catch (error) {
       console.error("Error al cargar marcas:", error)
+      toast({
+        title: "Error",
+        description: "No se pudieron cargar las marcas",
+        variant: "destructive",
+      })
     }
   }
 
@@ -49,6 +56,11 @@ export function ProductoForm() {
       setLineas(data)
     } catch (error) {
       console.error("Error al cargar líneas:", error)
+      toast({
+        title: "Error",
+        description: "No se pudieron cargar las líneas",
+        variant: "destructive",
+      })
     }
   }
 
@@ -57,6 +69,16 @@ export function ProductoForm() {
     setLoading(true)
 
     try {
+      if (!formData.marcaId || !formData.lineaId) {
+        toast({
+          title: "Error",
+          description: "Debes seleccionar una marca y una línea",
+          variant: "destructive",
+        })
+        setLoading(false)
+        return
+      }
+
       const productoDto: CreateProductoDto = {
         nombre: formData.nombre,
         descripcion: formData.descripcion,
@@ -67,7 +89,12 @@ export function ProductoForm() {
       }
 
       await createProducto(productoDto)
-      alert("Producto registrado exitosamente")
+
+      toast({
+        title: "Éxito",
+        description: "Producto registrado exitosamente",
+      })
+
       setFormData({
         nombre: "",
         descripcion: "",
@@ -76,9 +103,13 @@ export function ProductoForm() {
         marcaId: "",
         lineaId: "",
       })
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error al registrar producto:", error)
-      alert("Error al registrar producto")
+      toast({
+        title: "Error",
+        description: error?.response?.data?.message || "Error al registrar producto",
+        variant: "destructive",
+      })
     } finally {
       setLoading(false)
     }
@@ -87,11 +118,19 @@ export function ProductoForm() {
   const handleMarcaSuccess = async () => {
     await loadMarcas()
     setShowMarcaModal(false)
+    toast({
+      title: "Éxito",
+      description: "Marca creada exitosamente",
+    })
   }
 
   const handleLineaSuccess = async () => {
     await loadLineas()
     setShowLineaModal(false)
+    toast({
+      title: "Éxito",
+      description: "Línea creada exitosamente",
+    })
   }
 
   return (
@@ -156,7 +195,11 @@ export function ProductoForm() {
                 </DialogContent>
               </Dialog>
             </div>
-            <Select value={formData.marcaId} onValueChange={(value) => setFormData({ ...formData, marcaId: value })}>
+            <Select
+              value={formData.marcaId}
+              onValueChange={(value) => setFormData({ ...formData, marcaId: value })}
+              required
+            >
               <SelectTrigger id="marca">
                 <SelectValue placeholder="Selecciona una marca" />
               </SelectTrigger>
@@ -188,7 +231,11 @@ export function ProductoForm() {
                 </DialogContent>
               </Dialog>
             </div>
-            <Select value={formData.lineaId} onValueChange={(value) => setFormData({ ...formData, lineaId: value })}>
+            <Select
+              value={formData.lineaId}
+              onValueChange={(value) => setFormData({ ...formData, lineaId: value })}
+              required
+            >
               <SelectTrigger id="linea">
                 <SelectValue placeholder="Selecciona una línea" />
               </SelectTrigger>
