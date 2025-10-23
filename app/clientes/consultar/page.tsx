@@ -10,7 +10,7 @@ import Link from "next/link"
 export default function ConsultarClientesPage() {
   return (
     <WithAuth>
-      <RoleGuard allowedRoles={['dueño']} >
+      <RoleGuard allowedRoles={['dueño', 'empleado']} >
         <div className="min-h-screen bg-background">
           <AppHeader showBreadcrumbs />
           <div className="flex">

@@ -180,6 +180,10 @@ export interface AsociarProveedorProductoDto {
   codigo_proveedor: string
 }
 
+export interface AsignarLineaMarcaDto {
+  lineaId: number
+}
+
 // ============= MARCAS =============
 
 export async function getMarcas(): Promise<Marca[]> {
@@ -227,6 +231,16 @@ export async function deleteMarca(id: string): Promise<void> {
     await api.delete(`/marca/${id}`)
   } catch (error) {
     console.error("Error en deleteMarca:", error)
+    throw error
+  }
+}
+
+export async function asignarLineaMarca(marcaId: string, lineaId: number): Promise<{ message: string }> {
+  try {
+    const response = await api.post(`/marca/${marcaId}/assign-linea`, { lineaId })
+    return response.data
+  } catch (error) {
+    console.error("Error en asignarLineaMarca:", error)
     throw error
   }
 }

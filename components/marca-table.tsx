@@ -5,8 +5,16 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { Pencil, Trash2, Search } from "lucide-react"
-import { getMarcas, deleteMarca, updateMarca, getLineas, type Marca, type Linea } from "@/lib/api-service"
+import { Pencil, Trash2, Search, Plus } from "lucide-react"
+import {
+  getMarcas,
+  deleteMarca,
+  updateMarca,
+  getLineas,
+  asignarLineaMarca,
+  type Marca,
+  type Linea,
+} from "@/lib/api-service"
 import { useToast } from "@/hooks/use-toast"
 import { Loader2 } from "lucide-react"
 import {
@@ -19,6 +27,7 @@ import {
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 interface MarcaTableProps {
   onEdit?: (marca: Marca) => void
@@ -35,6 +44,8 @@ export function MarcaTable({ onEdit, onView, refreshTrigger }: MarcaTableProps) 
   const [editFormData, setEditFormData] = React.useState({ nombre: "", lineas: [] as number[] })
   const [availableLineas, setAvailableLineas] = React.useState<Linea[]>([])
   const [submitting, setSubmitting] = React.useState(false)
+  const [assigningMarca, setAssigningMarca] = React.useState<Marca | null>(null)
+  const [selectedLineaId, setSelectedLineaId] = React.useState<string>("")
 
   const loadMarcas = React.useCallback(async () => {
     setLoading(true)
@@ -119,6 +130,36 @@ export function MarcaTable({ onEdit, onView, refreshTrigger }: MarcaTableProps) 
     }
   }
 
+  const handleOpenAssignLinea = (marca: Marca) => {
+    setAssigningMarca(marca)
+    setSelectedLineaId("")
+  }
+
+  const handleAssignLinea = async () => {
+    if (!assigningMarca || !selectedLineaId) return
+
+    setSubmitting(true)
+    try {
+      const response = await asignarLineaMarca(assigningMarca.id.toString(), Number.parseInt(selectedLineaId))
+      toast({
+        title: "Éxito",
+        description: response.message,
+      })
+      setAssigningMarca(null)
+      setSelectedLineaId("")
+      loadMarcas()
+    } catch (error: any) {
+      console.error("Error al asignar línea:", error)
+      toast({
+        title: "Error",
+        description: error.response?.data?.message || "No se pudo asignar la línea a la marca.",
+        variant: "destructive",
+      })
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
   const toggleLinea = (lineaId: number) => {
     setEditFormData((prev) => ({
       ...prev,
@@ -186,6 +227,14 @@ export function MarcaTable({ onEdit, onView, refreshTrigger }: MarcaTableProps) 
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleOpenAssignLinea(marca)}
+                          title="Asignar Línea"
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Button>
                         <Button variant="ghost" size="icon" onClick={() => handleEdit(marca)} title="Editar">
                           <Pencil className="h-4 w-4" />
                         </Button>
@@ -247,6 +296,53 @@ export function MarcaTable({ onEdit, onView, refreshTrigger }: MarcaTableProps) 
                 </>
               ) : (
                 "Guardar Cambios"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!assigningMarca} onOpenChange={() => setAssigningMarca(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Asignar Línea a Marca</DialogTitle>
+            <DialogDescription>
+              Selecciona una línea para asignar a la marca <strong>{assigningMarca?.nombre}</strong>
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="select-linea">Línea</Label>
+              <Select value={selectedLineaId} onValueChange={setSelectedLineaId}>
+                <SelectTrigger id="select-linea">
+                  <SelectValue placeholder="Selecciona una línea" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableLineas.map((linea) => (
+                    <SelectItem key={linea.id} value={linea.id.toString()}>
+                      {linea.nombre}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAssigningMarca(null)} disabled={submitting}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleAssignLinea}
+              disabled={submitting || !selectedLineaId}
+              className="bg-[#2B3A8F] hover:bg-[#1e2870]"
+            >
+              {submitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Asignando...
+                </>
+              ) : (
+                "Asignar Línea"
               )}
             </Button>
           </DialogFooter>

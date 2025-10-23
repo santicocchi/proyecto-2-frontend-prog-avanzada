@@ -8,8 +8,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Eye, Search } from "lucide-react"
 import { getVentas, getVentaById, type VentaListItem, type VentaDetallada } from "@/lib/api-service"
 import { Badge } from "@/components/ui/badge"
+import { useNotify } from "@/lib/notify"
 
 export function VentaTable() {
+  const notify = useNotify()
+
   const [ventas, setVentas] = React.useState<VentaListItem[]>([])
   const [searchTerm, setSearchTerm] = React.useState("")
   const [loading, setLoading] = React.useState(true)
@@ -19,6 +22,7 @@ export function VentaTable() {
 
   React.useEffect(() => {
     loadData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const loadData = async () => {
@@ -26,7 +30,7 @@ export function VentaTable() {
       const ventasData = await getVentas()
       setVentas(ventasData)
     } catch (error) {
-      console.error("Error al cargar ventas:", error)
+      notify.apiError(error, "No se pudieron cargar las ventas")
     } finally {
       setLoading(false)
     }
@@ -39,9 +43,9 @@ export function VentaTable() {
       const detalle = await getVentaById(ventaId)
       setSelectedVenta(detalle)
     } catch (error) {
-      console.error("Error al cargar detalle de venta:", error)
-      alert("Error al cargar los detalles de la venta")
       setShowDetailModal(false)
+      setSelectedVenta(null)
+      notify.apiError(error, "Error al cargar los detalles de la venta")
     } finally {
       setLoadingDetail(false)
     }
@@ -56,23 +60,17 @@ export function VentaTable() {
     )
   })
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("es-AR", {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-    })
-  }
+  const formatDate = (dateString: string) =>
+    new Date(dateString).toLocaleDateString("es-AR", { year: "numeric", month: "2-digit", day: "2-digit" })
 
-  const formatDateTime = (dateString: string) => {
-    return new Date(dateString).toLocaleString("es-AR", {
+  const formatDateTime = (dateString: string) =>
+    new Date(dateString).toLocaleString("es-AR", {
       year: "numeric",
       month: "2-digit",
       day: "2-digit",
       hour: "2-digit",
       minute: "2-digit",
     })
-  }
 
   return (
     <>
@@ -125,7 +123,9 @@ export function VentaTable() {
                     <TableCell>
                       <Badge variant="outline">{venta.formaPago}</Badge>
                     </TableCell>
-                    <TableCell className="text-right font-semibold">${venta.total.toLocaleString()}</TableCell>
+                    <TableCell className="text-right font-semibold">
+                      ${venta.total.toLocaleString()}
+                    </TableCell>
                     <TableCell>
                       <div className="flex items-center justify-end gap-2">
                         <Button
@@ -133,6 +133,7 @@ export function VentaTable() {
                           size="icon"
                           title="Ver detalles"
                           onClick={() => handleVerDetalle(venta.id)}
+                          disabled={loadingDetail}
                         >
                           <Eye className="h-4 w-4" />
                         </Button>
@@ -147,11 +148,7 @@ export function VentaTable() {
       </div>
 
       <Dialog open={showDetailModal} onOpenChange={setShowDetailModal}>
-        <DialogContent
-          className="!max-w-[90vw] !w-[90vw] !h-auto overflow-y-auto p-8 rounded-xl"
-        >
-
-
+        <DialogContent className="!max-w-[90vw] !w-[90vw] !h-auto overflow-y-auto p-8 rounded-xl">
           <DialogHeader>
             <DialogTitle>Detalle de Venta #{selectedVenta?.id}</DialogTitle>
           </DialogHeader>
@@ -211,9 +208,7 @@ export function VentaTable() {
                           <TableCell>{detalle.impuesto}%</TableCell>
                           <TableCell>${detalle.precio_impuesto.toFixed(2)}</TableCell>
                           <TableCell>{detalle.cantidad}</TableCell>
-                          <TableCell className="font-semibold">
-                            ${Number(detalle.subtotal).toFixed(2)}
-                          </TableCell>
+                          <TableCell className="font-semibold">${Number(detalle.subtotal).toFixed(2)}</TableCell>
                         </TableRow>
                       ))}
                       <TableRow>
@@ -228,7 +223,6 @@ export function VentaTable() {
                   </Table>
                 </div>
               </div>
-
             </div>
           ) : null}
         </DialogContent>

@@ -11,7 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Upload, Plus, Loader2 } from "lucide-react"
 import { MarcaForm } from "./marca-form"
 import { LineaForm } from "./linea-form"
-import { getMarcas, getLineas, createProducto, type CreateProductoDto } from "@/lib/api-service"
+import { getMarcas, createProducto, type CreateProductoDto } from "@/lib/api-service"
 import { useToast } from "@/hooks/use-toast"
 
 export function ProductoForm() {
@@ -33,8 +33,15 @@ export function ProductoForm() {
 
   React.useEffect(() => {
     loadMarcas()
-    loadLineas()
   }, [])
+
+  React.useEffect(() => {
+    if (formData.marcaId) {
+      loadLineasByMarca(formData.marcaId)
+    } else {
+      setLineas([])
+    }
+  }, [formData.marcaId])
 
   const loadMarcas = async () => {
     try {
@@ -50,10 +57,14 @@ export function ProductoForm() {
     }
   }
 
-  const loadLineas = async () => {
+  const loadLineasByMarca = async (marcaId: string) => {
     try {
-      const data = await getLineas()
-      setLineas(data)
+      const marcaSeleccionada = marcas.find((m) => m.id.toString() === marcaId)
+      if (marcaSeleccionada?.lineas) {
+        setLineas(marcaSeleccionada.lineas)
+      } else {
+        setLineas([])
+      }
     } catch (error) {
       console.error("Error al cargar líneas:", error)
       toast({
@@ -125,7 +136,10 @@ export function ProductoForm() {
   }
 
   const handleLineaSuccess = async () => {
-    await loadLineas()
+    if (formData.marcaId) {
+      await loadMarcas() // Recargar marcas para obtener las líneas actualizadas
+      await loadLineasByMarca(formData.marcaId)
+    }
     setShowLineaModal(false)
     toast({
       title: "Éxito",
@@ -197,7 +211,13 @@ export function ProductoForm() {
             </div>
             <Select
               value={formData.marcaId}
-              onValueChange={(value) => setFormData({ ...formData, marcaId: value })}
+              onValueChange={(value) =>
+                setFormData({
+                  ...formData,
+                  marcaId: value,
+                  lineaId: "", // Limpiar línea seleccionada al cambiar de marca
+                })
+              }
               required
             >
               <SelectTrigger id="marca">
@@ -235,9 +255,18 @@ export function ProductoForm() {
               value={formData.lineaId}
               onValueChange={(value) => setFormData({ ...formData, lineaId: value })}
               required
+              disabled={!formData.marcaId} // Deshabilitar si no hay marca seleccionada
             >
               <SelectTrigger id="linea">
-                <SelectValue placeholder="Selecciona una línea" />
+                <SelectValue
+                  placeholder={
+                    !formData.marcaId
+                      ? "Primero selecciona una marca"
+                      : lineas.length === 0
+                        ? "No hay líneas para esta marca"
+                        : "Selecciona una línea"
+                  }
+                />
               </SelectTrigger>
               <SelectContent>
                 {lineas.map((linea) => (
