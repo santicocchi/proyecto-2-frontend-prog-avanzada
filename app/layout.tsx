@@ -41,6 +41,7 @@ export default function RootLayout({
           </ThemeProvider>
           <Analytics />
         </Suspense>
+        <Toaster />
       </body>
     </html>
   )

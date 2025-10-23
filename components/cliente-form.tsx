@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { createCliente, type CreateClienteDto } from "@/lib/api-service"
 import { Loader2 } from "lucide-react"
+import { useNotify } from "@/lib/notify"
 
 const TIPO_DOCUMENTO_MAP: Record<string, number> = {
   DNI: 1,
@@ -15,7 +16,12 @@ const TIPO_DOCUMENTO_MAP: Record<string, number> = {
   Pasaporte: 3,
 }
 
+const onlyDigits = (s: string) => s.replace(/\D+/g, "")
+const isDigits = (s: string) => /^\d+$/.test(s)
+
 export function ClienteForm() {
+  const notify = useNotify()
+
   const [loading, setLoading] = React.useState(false)
   const [formData, setFormData] = React.useState({
     nombre: "",
@@ -25,21 +31,47 @@ export function ClienteForm() {
     telefono: "",
   })
 
+  const validar = () => {
+    if (!formData.nombre.trim() || !formData.apellido.trim()) {
+      return "Nombre y apellido son obligatorios"
+    }
+    if (!formData.num_documento.trim()) {
+      return "El número de documento es obligatorio"
+    }
+    if (!isDigits(formData.num_documento)) {
+      return "El número de documento debe contener solo números"
+    }
+    if (!formData.telefono.trim()) {
+      return "El teléfono es obligatorio"
+    }
+    if (!isDigits(formData.telefono)) {
+      return "El teléfono debe contener solo números"
+    }
+    return null
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setLoading(true)
 
+    const err = validar()
+    if (err) {
+      notify.error(err)
+      return
+    }
+
+    setLoading(true)
     try {
       const clienteDto: CreateClienteDto = {
-        nombre: formData.nombre,
-        apellido: formData.apellido,
-        num_documento: formData.num_documento,
-        telefono: formData.telefono,
+        nombre: formData.nombre.trim(),
+        apellido: formData.apellido.trim(),
+        num_documento: formData.num_documento.trim(),
+        telefono: formData.telefono.trim(),
         tipo_documento: TIPO_DOCUMENTO_MAP[formData.tipoDocumento],
       }
 
       await createCliente(clienteDto)
-      alert("Cliente registrado exitosamente")
+      notify.success("Cliente registrado exitosamente")
+
       setFormData({
         nombre: "",
         apellido: "",
@@ -49,7 +81,7 @@ export function ClienteForm() {
       })
     } catch (error) {
       console.error("Error al registrar cliente:", error)
-      alert("Error al registrar cliente")
+      notify.apiError(error, "Error al registrar cliente")
     } finally {
       setLoading(false)
     }
@@ -108,7 +140,11 @@ export function ClienteForm() {
               <Input
                 id="num_documento"
                 value={formData.num_documento}
-                onChange={(e) => setFormData({ ...formData, num_documento: e.target.value })}
+                inputMode="numeric"
+                pattern="[0-9]*"
+                onChange={(e) =>
+                  setFormData({ ...formData, num_documento: onlyDigits(e.target.value) })
+                }
                 required
               />
             </div>
@@ -118,14 +154,22 @@ export function ClienteForm() {
             <Label htmlFor="telefono">Teléfono *</Label>
             <Input
               id="telefono"
-              type="tel"
               value={formData.telefono}
-              onChange={(e) => setFormData({ ...formData, telefono: e.target.value })}
+              inputMode="numeric"
+              pattern="[0-9]*"
+              onChange={(e) =>
+                setFormData({ ...formData, telefono: onlyDigits(e.target.value) })
+              }
               required
             />
           </div>
 
-          <Button type="submit" className="w-full bg-[#2B3A8F] hover:bg-[#1e2870]" size="lg" disabled={loading}>
+          <Button
+            type="submit"
+            className="w-full bg-[#2B3A8F] hover:bg-[#1e2870]"
+            size="lg"
+            disabled={loading}
+          >
             {loading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

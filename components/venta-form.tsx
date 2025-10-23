@@ -18,6 +18,7 @@ import {
   type CreateVentaDto,
 } from "@/lib/api-service"
 import { Loader2, Plus, Trash2 } from "lucide-react"
+import { useNotify } from "@/lib/notify"
 
 interface DetalleVentaForm {
   productoId: number
@@ -28,6 +29,8 @@ interface DetalleVentaForm {
 }
 
 export function VentaForm() {
+  const notify = useNotify()
+
   const [loading, setLoading] = React.useState(false)
   const [clientes, setClientes] = React.useState<Cliente[]>([])
   const [formasPago, setFormasPago] = React.useState<FormaPago[]>([])
@@ -36,7 +39,7 @@ export function VentaForm() {
   const [formData, setFormData] = React.useState({
     clienteId: "",
     formaPagoId: "",
-    userId: "1", // Hardcoded por ahora, debería venir de la sesión
+    userId: "1", // TODO: tomar de sesión
     fechaVenta: new Date().toISOString().split("T")[0],
   })
   const [nuevoDetalle, setNuevoDetalle] = React.useState({
@@ -46,6 +49,7 @@ export function VentaForm() {
 
   React.useEffect(() => {
     loadData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const loadData = async () => {
@@ -60,60 +64,68 @@ export function VentaForm() {
       setProductos(productosData)
     } catch (error) {
       console.error("Error al cargar datos:", error)
+      notify.apiError(error, "No se pudieron cargar los datos iniciales")
     }
   }
 
   const agregarDetalle = () => {
-    if (!nuevoDetalle.productoId || nuevoDetalle.cantidad <= 0) {
-      alert("Seleccione un producto y cantidad válida")
+    if (!nuevoDetalle.productoId) {
+      notify.error("Seleccione un producto")
+      return
+    }
+    if (nuevoDetalle.cantidad <= 0) {
+      notify.error("La cantidad debe ser mayor a 0")
       return
     }
 
     const producto = productos.find((p) => p.id === Number(nuevoDetalle.productoId))
-    if (!producto) return
+    if (!producto) {
+      notify.error("Producto inválido")
+      return
+    }
 
-    const precio = producto.precio_con_impuesto
-    const subtotal = precio * nuevoDetalle.cantidad
+    const precio = Number(producto.precio_con_impuesto) || 0
+    const cantidad = Number(nuevoDetalle.cantidad) || 0
+    const subtotal = precio * cantidad
 
-    setDetalles([
-      ...detalles,
+    setDetalles((prev) => [
+      ...prev,
       {
         productoId: Number(nuevoDetalle.productoId),
-        cantidad: nuevoDetalle.cantidad,
+        cantidad,
         precio,
         subtotal,
         nombreProducto: producto.nombre,
       },
     ])
     setNuevoDetalle({ productoId: "", cantidad: 1 })
+    notify.success("Producto agregado")
   }
 
   const eliminarDetalle = (index: number) => {
-    setDetalles(detalles.filter((_, i) => i !== index))
+    setDetalles((prev) => prev.filter((_, i) => i !== index))
+    notify.success("Ítem eliminado")
   }
 
-  const calcularTotal = () => {
-    return detalles.reduce((sum, detalle) => sum + detalle.subtotal, 0)
-  }
+  const calcularTotal = () => detalles.reduce((sum, d) => sum + d.subtotal, 0)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
     if (detalles.length === 0) {
-      alert("Debe agregar al menos un producto")
+      notify.error("Debe agregar al menos un producto")
       return
     }
 
     if (!formData.clienteId || !formData.formaPagoId) {
-      alert("Complete todos los campos requeridos")
+      notify.error("Complete cliente y forma de pago")
       return
     }
 
     setLoading(true)
-
     try {
       const [year, month, day] = formData.fechaVenta.split("-").map(Number)
-      const fechaLocal = new Date(year, month - 1, day, 15, 30, 0) // usa la hora que quieras
+      const fechaLocal = new Date(year, month - 1, day, 15, 30, 0)
       const fechaISO = fechaLocal.toISOString()
 
       const ventaData: CreateVentaDto = {
@@ -128,8 +140,10 @@ export function VentaForm() {
       }
 
       await createVenta(ventaData)
-      alert("Venta registrada exitosamente")
 
+      notify.success("Venta registrada exitosamente")
+
+      // reset
       setFormData({
         clienteId: "",
         formaPagoId: "",
@@ -139,13 +153,11 @@ export function VentaForm() {
       setDetalles([])
     } catch (error) {
       console.error("Error al registrar venta:", error)
-      alert("Error al registrar venta")
+      notify.apiError(error, "Error al registrar venta")
     } finally {
       setLoading(false)
     }
   }
-
-
 
   return (
     <Card className="max-w-4xl mx-auto">
@@ -237,7 +249,10 @@ export function VentaForm() {
                     min="1"
                     value={nuevoDetalle.cantidad}
                     onChange={(e) =>
-                      setNuevoDetalle({ ...nuevoDetalle, cantidad: Number.parseInt(e.target.value) || 1 })
+                      setNuevoDetalle({
+                        ...nuevoDetalle,
+                        cantidad: Number.parseInt(e.target.value) || 1,
+                      })
                     }
                   />
                   <Button type="button" onClick={agregarDetalle} size="icon">
@@ -267,7 +282,12 @@ export function VentaForm() {
                         <TableCell className="text-right">${detalle.precio.toFixed(2)}</TableCell>
                         <TableCell className="text-right">${detalle.subtotal.toFixed(2)}</TableCell>
                         <TableCell className="text-right">
-                          <Button type="button" variant="ghost" size="icon" onClick={() => eliminarDetalle(index)}>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => eliminarDetalle(index)}
+                          >
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </TableCell>
@@ -277,7 +297,9 @@ export function VentaForm() {
                       <TableCell colSpan={3} className="text-right font-semibold">
                         Total:
                       </TableCell>
-                      <TableCell className="text-right font-bold text-lg">${calcularTotal().toFixed(2)}</TableCell>
+                      <TableCell className="text-right font-bold text-lg">
+                        ${calcularTotal().toFixed(2)}
+                      </TableCell>
                       <TableCell />
                     </TableRow>
                   </TableBody>
@@ -286,7 +308,12 @@ export function VentaForm() {
             )}
           </div>
 
-          <Button type="submit" className="w-full bg-[#2B3A8F] hover:bg-[#1e2870]" size="lg" disabled={loading}>
+          <Button
+            type="submit"
+            className="w-full bg-[#2B3A8F] hover:bg-[#1e2870]"
+            size="lg"
+            disabled={loading}
+          >
             {loading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
