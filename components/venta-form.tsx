@@ -16,6 +16,8 @@ import {
   type FormaPago,
   type ProductoBackend,
   type CreateVentaDto,
+  getProductosAdvanced,
+  FindAdvancedProductoDto,
 } from "@/lib/api-service"
 import { Loader2, Plus, Trash2 } from "lucide-react"
 import { useNotify } from "@/lib/notify"
@@ -54,14 +56,26 @@ export function VentaForm() {
 
   const loadData = async () => {
     try {
+      const filterProductos: FindAdvancedProductoDto = {
+        marcaId : null,
+        proveedorId : null,
+        lineaId : null,
+        stockDesde : null,
+        stockHasta : null,
+        precioDesde : null,
+        precioHasta : null,
+        codigoProveedor : null,
+        take : null,
+        page : null,
+      }
       const [clientesData, formasPagoData, productosData] = await Promise.all([
         getClientes(),
         getFormasPago(),
-        getProductos(),
+        getProductosAdvanced(filterProductos),
       ])
-      setClientes(clientesData)
+      setClientes(clientesData.data)
       setFormasPago(formasPagoData)
-      setProductos(productosData)
+      setProductos(productosData.data)
     } catch (error) {
       console.error("Error al cargar datos:", error)
       notify.apiError(error, "No se pudieron cargar los datos iniciales")

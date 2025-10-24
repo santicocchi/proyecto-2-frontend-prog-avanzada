@@ -1,3 +1,4 @@
+"use client"
 import { AppHeader } from "@/components/app-header"
 import RoleGuard from "@/components/auth/RoleGuard"
 import WithAuth from "@/components/auth/withAuth"

@@ -75,11 +75,11 @@ export interface ProductoBackend {
       }
     | string // Puede ser objeto o string según el endpoint
   linea:
-    | Array<{
+    | {
         id: number
         nombre: string
-      }>
-    | string // Puede ser array o string según el endpoint
+      }
+    | string // Puede ser objeto o string según el endpoint
   proveedores?: Array<{
     // Agregando proveedores para detalles
     nombre: string
@@ -451,6 +451,8 @@ export async function getProductosAdvanced(filters: FindAdvancedProductoDto): Pr
     if (filters.precioHasta) params.precioHasta = filters.precioHasta
     if (filters.stockDesde) params.stockDesde = filters.stockDesde
     if (filters.stockHasta) params.stockHasta = filters.stockHasta
+    if (filters.take) params.take = filters.take
+    if (filters.page) params.page = filters.page
     const response = await api.get("/producto/advanced", { params: params })
     return response.data
   } catch (error) {

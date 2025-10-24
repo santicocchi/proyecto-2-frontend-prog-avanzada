@@ -40,7 +40,7 @@ export function ClienteTable() {
   const loadClientes = async () => {
     try {
       const data = await getClientes()
-      setClientes(data)
+      setClientes(data.data)
     } catch (error) {
       console.error("Error al cargar clientes:", error)
       toast({

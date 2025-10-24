@@ -182,7 +182,7 @@ export function ProductoTable() {
           precio: Number.parseFloat(detalles.precio_sin_impuesto),
           stock: detalles.stock,
           marcaId: typeof detalles.marca === "object" ? detalles.marca.id : 0,
-          lineaId: Array.isArray(detalles.linea) && detalles.linea.length > 0 ? detalles.linea[0].id : 0,
+          lineaId: typeof detalles.linea === "object" ? detalles.linea.id : 0,
         })
         setEditModalOpen(true)
       }
@@ -547,7 +547,7 @@ export function ProductoTable() {
                         </div>
                       ) : (
                         <Badge variant="secondary" className="text-xs">
-                          {producto.linea}
+                          {producto.linea.toString()}
                         </Badge>
                       )}
                     </TableCell>
@@ -645,11 +645,11 @@ export function ProductoTable() {
                 </div>
                 <div>
                   <Label className="text-sm font-semibold text-muted-foreground">Marca</Label>
-                  <p className="text-base">{selectedProducto.marca}</p>
+                  <p className="text-base">{selectedProducto.marca.nombre}</p>
                 </div>
                 <div>
                   <Label className="text-sm font-semibold text-muted-foreground">Línea</Label>
-                  <p className="text-base">{selectedProducto.linea}</p>
+                  <p className="text-base">{selectedProducto.linea.nombre}</p>
                 </div>
                 <div>
                   <Label className="text-sm font-semibold text-muted-foreground">Stock</Label>
