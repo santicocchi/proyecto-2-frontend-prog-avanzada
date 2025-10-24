@@ -5,32 +5,96 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Eye, Search } from "lucide-react"
-import { getVentas, getVentaById, type VentaListItem, type VentaDetallada } from "@/lib/api-service"
+import { Eye, Filter, X, ChevronLeft, ChevronRight } from "lucide-react"
+import {
+  getVentasAdvanced,
+  getVentaById,
+  getClientes,
+  getFormasPago,
+  getUsuarios,
+  type VentaListItem,
+  type VentaDetallada,
+  type Cliente,
+  type FormaPago,
+  type Usuario,
+  type FindAdvancedVentaDto,
+} from "@/lib/api-service"
 import { Badge } from "@/components/ui/badge"
-import { useNotify } from "@/lib/notify"
+import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 export function VentaTable() {
-  const notify = useNotify()
-
   const [ventas, setVentas] = React.useState<VentaListItem[]>([])
-  const [searchTerm, setSearchTerm] = React.useState("")
   const [loading, setLoading] = React.useState(true)
   const [selectedVenta, setSelectedVenta] = React.useState<VentaDetallada | null>(null)
   const [showDetailModal, setShowDetailModal] = React.useState(false)
   const [loadingDetail, setLoadingDetail] = React.useState(false)
 
+  // Estados para filtros
+  const [showFilterModal, setShowFilterModal] = React.useState(false)
+  const [filters, setFilters] = React.useState<FindAdvancedVentaDto>({
+    clienteId: null,
+    formaPagoId: null,
+    userId: null,
+    total: null,
+    take: 10,
+    page: 1,
+  })
+
+  // Estados para datos de los selectores
+  const [clientes, setClientes] = React.useState<Cliente[]>([])
+  const [formasPago, setFormasPago] = React.useState<FormaPago[]>([])
+  const [usuarios, setUsuarios] = React.useState<Usuario[]>([])
+
+  // Estados para paginación
+  const [totalVentas, setTotalVentas] = React.useState(0)
+  const [totalPages, setTotalPages] = React.useState(0)
+
   React.useEffect(() => {
-    loadData()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    loadInitialData()
   }, [])
 
-  const loadData = async () => {
+  React.useEffect(() => {
+    loadVentas()
+  }, [filters])
+
+  const loadInitialData = async () => {
     try {
-      const ventasData = await getVentas()
-      setVentas(ventasData)
+      const [clientesData, formasPagoData, usuariosData] = await Promise.all([
+        getClientes().catch((err) => {
+          console.error("Error al cargar clientes:", err)
+          return []
+        }),
+        getFormasPago().catch((err) => {
+          console.error("Error al cargar formas de pago:", err)
+          return []
+        }),
+        getUsuarios().catch((err) => {
+          console.error("Error al cargar usuarios:", err)
+          return []
+        }),
+      ])
+      console.log('clientes :) :',clientesData)
+      setClientes(Array.isArray(clientesData.data) ? clientesData.data : [])
+      setFormasPago(Array.isArray(formasPagoData) ? formasPagoData : [])
+      setUsuarios(Array.isArray(usuariosData) ? usuariosData : [])
     } catch (error) {
-      notify.apiError(error, "No se pudieron cargar las ventas")
+      console.error("Error al cargar datos iniciales:", error)
+      setClientes([])
+      setFormasPago([])
+      setUsuarios([])
+    }
+  }
+
+  const loadVentas = async () => {
+    setLoading(true)
+    try {
+      const response = await getVentasAdvanced(filters)
+      setVentas(response.data)
+      setTotalVentas(response.total)
+      setTotalPages(Math.ceil(response.total / (filters.take || 10)))
+    } catch (error) {
+      console.error("Error al cargar ventas:", error)
     } finally {
       setLoading(false)
     }
@@ -43,48 +107,80 @@ export function VentaTable() {
       const detalle = await getVentaById(ventaId)
       setSelectedVenta(detalle)
     } catch (error) {
+      console.error("Error al cargar detalle de venta:", error)
+      alert("Error al cargar los detalles de la venta")
       setShowDetailModal(false)
-      setSelectedVenta(null)
-      notify.apiError(error, "Error al cargar los detalles de la venta")
     } finally {
       setLoadingDetail(false)
     }
   }
 
-  const filteredVentas = ventas.filter((venta) => {
-    const searchLower = searchTerm.toLowerCase()
-    return (
-      venta.cliente.toLowerCase().includes(searchLower) ||
-      venta.id.toString().includes(searchTerm) ||
-      venta.responsable.toLowerCase().includes(searchLower)
-    )
-  })
+  const handleApplyFilters = () => {
+    setFilters({ ...filters, page: 1 })
+    setShowFilterModal(false)
+  }
 
-  const formatDate = (dateString: string) =>
-    new Date(dateString).toLocaleDateString("es-AR", { year: "numeric", month: "2-digit", day: "2-digit" })
+  const handleClearFilters = () => {
+    setFilters({
+      clienteId: null,
+      formaPagoId: null,
+      userId: null,
+      total: null,
+      take: 10,
+      page: 1,
+    })
+    setShowFilterModal(false)
+  }
 
-  const formatDateTime = (dateString: string) =>
-    new Date(dateString).toLocaleString("es-AR", {
+  const activeFiltersCount = [filters.clienteId, filters.formaPagoId, filters.userId, filters.total].filter(
+    Boolean,
+  ).length
+
+  const handlePageChange = (newPage: number) => {
+    setFilters({ ...filters, page: newPage })
+  }
+
+  const handleTakeChange = (newTake: string) => {
+    setFilters({ ...filters, take: Number.parseInt(newTake), page: 1 })
+  }
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("es-AR", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    })
+  }
+
+  const formatDateTime = (dateString: string) => {
+    return new Date(dateString).toLocaleString("es-AR", {
       year: "numeric",
       month: "2-digit",
       day: "2-digit",
       hour: "2-digit",
       minute: "2-digit",
     })
+  }
 
   return (
     <>
       <div className="space-y-4">
         <div className="flex items-center gap-2">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar por ID, cliente o responsable..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
+          <Button variant="outline" onClick={() => setShowFilterModal(true)} className="gap-2">
+            <Filter className="h-4 w-4" />
+            Filtros Avanzados
+            {activeFiltersCount > 0 && (
+              <Badge variant="secondary" className="ml-1">
+                {activeFiltersCount}
+              </Badge>
+            )}
+          </Button>
+          {activeFiltersCount > 0 && (
+            <Button variant="ghost" size="sm" onClick={handleClearFilters}>
+              <X className="h-4 w-4 mr-1" />
+              Limpiar filtros
+            </Button>
+          )}
         </div>
 
         <div className="rounded-lg border bg-card">
@@ -107,14 +203,14 @@ export function VentaTable() {
                     Cargando ventas...
                   </TableCell>
                 </TableRow>
-              ) : filteredVentas.length === 0 ? (
+              ) : ventas.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                     No se encontraron ventas
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredVentas.map((venta) => (
+                ventas.map((venta) => (
                   <TableRow key={venta.id}>
                     <TableCell className="font-mono text-sm">{venta.id}</TableCell>
                     <TableCell>{formatDate(venta.fecha)}</TableCell>
@@ -123,9 +219,7 @@ export function VentaTable() {
                     <TableCell>
                       <Badge variant="outline">{venta.formaPago}</Badge>
                     </TableCell>
-                    <TableCell className="text-right font-semibold">
-                      ${venta.total.toLocaleString()}
-                    </TableCell>
+                    <TableCell className="text-right font-semibold">${venta.total.toLocaleString()}</TableCell>
                     <TableCell>
                       <div className="flex items-center justify-end gap-2">
                         <Button
@@ -133,7 +227,6 @@ export function VentaTable() {
                           size="icon"
                           title="Ver detalles"
                           onClick={() => handleVerDetalle(venta.id)}
-                          disabled={loadingDetail}
                         >
                           <Eye className="h-4 w-4" />
                         </Button>
@@ -145,7 +238,146 @@ export function VentaTable() {
             </TableBody>
           </Table>
         </div>
+
+        {!loading && ventas.length > 0 && (
+          <div className="flex items-center justify-between">
+            <div className="text-sm text-muted-foreground">
+              Mostrando {((filters.page || 1) - 1) * (filters.take || 10) + 1} a{" "}
+              {Math.min((filters.page || 1) * (filters.take || 10), totalVentas)} de {totalVentas} ventas
+            </div>
+            <div className="flex items-center gap-2">
+              <Select value={filters.take?.toString() || "10"} onValueChange={handleTakeChange}>
+                <SelectTrigger className="w-[100px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="5">5 por página</SelectItem>
+                  <SelectItem value="10">10 por página</SelectItem>
+                  <SelectItem value="20">20 por página</SelectItem>
+                  <SelectItem value="50">50 por página</SelectItem>
+                </SelectContent>
+              </Select>
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => handlePageChange((filters.page || 1) - 1)}
+                  disabled={filters.page === 1}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <div className="text-sm px-3">
+                  Página {filters.page} de {totalPages}
+                </div>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => handlePageChange((filters.page || 1) + 1)}
+                  disabled={filters.page === totalPages}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
+
+      <Dialog open={showFilterModal} onOpenChange={setShowFilterModal}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Filtros Avanzados</DialogTitle>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-4 py-4">
+            <div className="space-y-2">
+              <Label>Cliente</Label>
+              <Select
+                value={filters.clienteId?.toString() || "all"}
+                onValueChange={(value) =>
+                  setFilters({ ...filters, clienteId: value === "all" ? null : Number.parseInt(value) })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Todos los clientes" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos los clientes</SelectItem>
+                  {clientes.map((cliente) => (
+                    <SelectItem key={cliente.id} value={cliente.id.toString()}>
+                      {cliente.nombre} {cliente.apellido}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Forma de Pago</Label>
+              <Select
+                value={filters.formaPagoId?.toString() || "all"}
+                onValueChange={(value) =>
+                  setFilters({ ...filters, formaPagoId: value === "all" ? null : Number.parseInt(value) })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Todas las formas de pago" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas las formas de pago</SelectItem>
+                  {formasPago.map((fp) => (
+                    <SelectItem key={fp.id} value={fp.id.toString()}>
+                      {fp.nombre}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Usuario Responsable</Label>
+              <Select
+                value={filters.userId?.toString() || "all"}
+                onValueChange={(value) =>
+                  setFilters({ ...filters, userId: value === "all" ? null : Number.parseInt(value) })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Todos los usuarios" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos los usuarios</SelectItem>
+                  {usuarios.map((usuario) => (
+                    <SelectItem key={usuario.id} value={usuario.id.toString()}>
+                      {usuario.email}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Total Exacto</Label>
+              <Input
+                type="number"
+                placeholder="Ej: 50000"
+                value={filters.total ?? ""}
+                onChange={(e) =>
+                  setFilters({ ...filters, total: e.target.value ? Number.parseFloat(e.target.value) : null })
+                }
+              />
+            </div>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setShowFilterModal(false)}>
+              Cancelar
+            </Button>
+            <Button variant="outline" onClick={handleClearFilters}>
+              Limpiar
+            </Button>
+            <Button onClick={handleApplyFilters}>Aplicar Filtros</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={showDetailModal} onOpenChange={setShowDetailModal}>
         <DialogContent className="!max-w-[90vw] !w-[90vw] !h-auto overflow-y-auto p-8 rounded-xl">

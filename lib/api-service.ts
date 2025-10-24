@@ -184,6 +184,38 @@ export interface AsignarLineaMarcaDto {
   lineaId: number
 }
 
+export interface FindAdvancedProductoDto {
+  marcaId: number | null
+  proveedorId: number | null
+  lineaId: number | null
+  stockDesde: number | null
+  stockHasta: number | null
+  precioDesde: number | null
+  precioHasta: number | null
+  codigoProveedor: string | null
+  take: number | null
+  page: number | null
+}
+
+export interface ProductosAdvancedResponse {
+  total: number
+  data: ProductoBackend[]
+}
+
+export interface FindAdvancedVentaDto {
+  clienteId: number | null
+  formaPagoId: number | null
+  userId: number | null
+  total: number | null
+  take: number | null
+  page: number | null
+}
+
+export interface VentasAdvancedResponse {
+  total: number
+  data: VentaListItem[]
+}
+
 // ============= MARCAS =============
 
 export async function getMarcas(): Promise<Marca[]> {
@@ -257,7 +289,7 @@ export async function getLineas(): Promise<Linea[]> {
   }
 }
 
-export async function getLineasByMarca(marcaId: string): Promise<Linea[]> {
+export async function getLineasByMarca(marcaId: number): Promise<Linea[]> {
   try {
     const response = await api.get(`/linea`, { params: { marcaId } })
     return response.data
@@ -408,11 +440,33 @@ export async function deleteProducto(id: string): Promise<void> {
   }
 }
 
+export async function getProductosAdvanced(filters: FindAdvancedProductoDto): Promise<ProductosAdvancedResponse> {
+  try {
+    const params: any = {}
+    if (filters.codigoProveedor) params.codigoProveedor = filters.codigoProveedor
+    if (filters.proveedorId) params.proveedorId = filters.proveedorId
+    if (filters.lineaId) params.lineaId = filters.lineaId
+    if (filters.marcaId) params.marcaId = filters.marcaId
+    if (filters.precioDesde) params.precioDesde = filters.precioDesde
+    if (filters.precioHasta) params.precioHasta = filters.precioHasta
+    if (filters.stockDesde) params.stockDesde = filters.stockDesde
+    if (filters.stockHasta) params.stockHasta = filters.stockHasta
+    const response = await api.get("/producto/advanced", { params: params })
+    return response.data
+  } catch (error) {
+    console.error("Error en getProductosAdvanced:", error)
+    throw error
+  }
+}
+
 // ============= CLIENTES =============
 
-export async function getClientes(): Promise<Cliente[]> {
+export async function getClientes(): Promise<{data:Cliente[], total:number}> {
   try {
     const response = await api.get("/cliente")
+    if (!response.data) {
+      return { data: [], total: 0 }
+    }
     return response.data
   } catch (error) {
     console.error("Error en getClientes:", error)
@@ -532,6 +586,24 @@ export async function getVentas(): Promise<VentaListItem[]> {
     return response.data
   } catch (error) {
     console.error("Error en getVentas:", error)
+    throw error
+  }
+}
+
+export async function getVentasAdvanced(filters: FindAdvancedVentaDto): Promise<VentasAdvancedResponse> {
+  try {
+    const params: any = {}
+    if (filters.clienteId) params.clienteId = filters.clienteId
+    if (filters.formaPagoId) params.formaPagoId = filters.formaPagoId
+    if (filters.userId) params.userId = filters.userId
+    if (filters.total) params.total = filters.total
+    if (filters.take) params.take = filters.take
+    if (filters.page) params.page = filters.page
+
+    const response = await api.get("/venta/advanced", { params })
+    return response.data
+  } catch (error) {
+    console.error("Error en getVentasAdvanced:", error)
     throw error
   }
 }

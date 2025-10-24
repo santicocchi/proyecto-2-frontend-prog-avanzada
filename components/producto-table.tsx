@@ -8,9 +8,8 @@ import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Pencil, Trash2, Eye, Filter, Search, Barcode, LinkIcon } from "lucide-react"
+import { Pencil, Trash2, Eye, Filter, LinkIcon, X, ChevronLeft, ChevronRight } from "lucide-react"
 import {
-  getProductos,
   getProductoById,
   deleteProducto,
   updateProducto,
@@ -18,21 +17,36 @@ import {
   asociarProveedorProducto,
   getMarcas,
   getLineas,
+  getLineasByMarca,
+  getProductosAdvanced,
   type ProductoBackend,
   type CreateProductoDto,
   type ProveedorBackend,
   type Marca,
   type Linea,
+  type FindAdvancedProductoDto,
 } from "@/lib/api-service"
 import { useToast } from "@/hooks/use-toast"
 
 export function ProductoTable() {
   const { toast } = useToast()
   const [productos, setProductos] = React.useState<ProductoBackend[]>([])
-  const [searchNombre, setSearchNombre] = React.useState("")
-  const [searchCodigo, setSearchCodigo] = React.useState("")
-  const [showFilterModal, setShowFilterModal] = React.useState(false)
+  const [totalProductos, setTotalProductos] = React.useState(0)
   const [loading, setLoading] = React.useState(true)
+
+  const [filters, setFilters] = React.useState<FindAdvancedProductoDto>({
+    page: 1,
+    take: 10,
+    marcaId: null,
+    lineaId: null,
+    proveedorId: null,
+    codigoProveedor: null,
+    stockDesde: null,
+    stockHasta: null,
+    precioDesde: null,
+    precioHasta: null,
+  })
+  const [showFilterModal, setShowFilterModal] = React.useState(false)
 
   const [viewModalOpen, setViewModalOpen] = React.useState(false)
   const [editModalOpen, setEditModalOpen] = React.useState(false)
@@ -58,18 +72,49 @@ export function ProductoTable() {
 
   const [marcas, setMarcas] = React.useState<Marca[]>([])
   const [lineas, setLineas] = React.useState<Linea[]>([])
+  const [allLineas, setAllLineas] = React.useState<Linea[]>([])
 
   React.useEffect(() => {
-    loadProductos()
     loadProveedores()
     loadMarcas()
-    loadLineas()
+    loadAllLineas()
   }, [])
 
+  React.useEffect(() => {
+    console.log("[v0] Filters changed, loading productos:", filters)
+    loadProductos()
+  }, [filters])
+
+  React.useEffect(() => {
+    const loadLineasForMarca = async () => {
+      if (filters.marcaId && filters.marcaId !== 0) {
+        try {
+          const lineasFiltradas = await getLineasByMarca(filters.marcaId)
+          setLineas(lineasFiltradas)
+          // Si la línea seleccionada no está en las líneas filtradas, limpiarla
+          if (filters.lineaId && !lineasFiltradas.some((l) => l.id === filters.lineaId)) {
+            setFilters((prev) => ({ ...prev, lineaId: null }))
+          }
+        } catch (error) {
+          console.error("Error al cargar líneas por marca:", error)
+        }
+      } else {
+        // Si no hay marca seleccionada, mostrar todas las líneas
+        setLineas(allLineas)
+      }
+    }
+
+    loadLineasForMarca()
+  }, [filters.marcaId, allLineas])
+
   const loadProductos = async () => {
+    setLoading(true)
     try {
-      const data = await getProductos()
-      setProductos(data)
+      console.log("[v0] Calling getProductosAdvanced with filters:", filters)
+      const response = await getProductosAdvanced(filters)
+      console.log("[v0] Response from backend:", response)
+      setProductos(response.data)
+      setTotalProductos(response.total)
     } catch (error) {
       console.error("Error al cargar productos:", error)
       toast({
@@ -100,9 +145,10 @@ export function ProductoTable() {
     }
   }
 
-  const loadLineas = async () => {
+  const loadAllLineas = async () => {
     try {
       const data = await getLineas()
+      setAllLineas(data)
       setLineas(data)
     } catch (error) {
       console.error("Error al cargar líneas:", error)
@@ -225,51 +271,237 @@ export function ProductoTable() {
     }
   }
 
-  const filteredProductos = productos.filter((producto) => {
-    const matchNombre = producto.nombre.toLowerCase().includes(searchNombre.toLowerCase())
-    return matchNombre
-  })
+  const handleApplyFilters = () => {
+    setFilters((prev) => ({ ...prev, page: 1 }))
+    setShowFilterModal(false)
+  }
+
+  const handleClearFilters = () => {
+    setFilters({
+      page: 1,
+      take: 10,
+      marcaId: null,
+      lineaId: null,
+      proveedorId: null,
+      codigoProveedor: null,
+      stockDesde: null,
+      stockHasta: null,
+      precioDesde: null,
+      precioHasta: null,
+    })
+    setShowFilterModal(false)
+  }
+
+  const currentPage = filters.page || 1
+  const itemsPerPage = filters.take || 10
+  const totalPages = Math.ceil(totalProductos / itemsPerPage)
+  const canGoPrevious = currentPage > 1
+  const canGoNext = currentPage < totalPages
+
+  const handlePreviousPage = () => {
+    if (canGoPrevious) {
+      setFilters((prev) => ({ ...prev, page: currentPage - 1 }))
+    }
+  }
+
+  const handleNextPage = () => {
+    if (canGoNext) {
+      setFilters((prev) => ({ ...prev, page: currentPage + 1 }))
+    }
+  }
+
+  const activeFiltersCount = Object.keys(filters).filter((key) => {
+    if (key === "page" || key === "take") return false
+    const value = filters[key as keyof FindAdvancedProductoDto]
+    return value !== null && value !== undefined && value !== ""
+  }).length
 
   return (
     <>
       <div className="space-y-4">
         <div className="flex flex-wrap gap-4 items-center">
           <Dialog open={showFilterModal} onOpenChange={setShowFilterModal}>
-            <DialogContent>
+            <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Filtros Avanzados</DialogTitle>
               </DialogHeader>
               <div className="space-y-4 py-4">
-                <p className="text-sm text-muted-foreground">Filtros avanzados disponibles próximamente...</p>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Marca</Label>
+                    <Select
+                      value={filters.marcaId?.toString() || "0"}
+                      onValueChange={(value) => {
+                        const marcaId = value === "0" ? null : Number.parseInt(value)
+                        setFilters({ ...filters, marcaId, lineaId: null })
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Todas las marcas" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="0">Todas las marcas</SelectItem>
+                        {marcas.map((marca) => (
+                          <SelectItem key={marca.id} value={marca.id.toString()}>
+                            {marca.nombre}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Línea</Label>
+                    <Select
+                      value={filters.lineaId?.toString() || "0"}
+                      onValueChange={(value) => {
+                        const lineaId = value === "0" ? null : Number.parseInt(value)
+                        setFilters({ ...filters, lineaId })
+                      }}
+                      disabled={!filters.marcaId}
+                    >
+                      <SelectTrigger>
+                        <SelectValue
+                          placeholder={!filters.marcaId ? "Selecciona una marca primero" : "Todas las líneas"}
+                        />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="0">Todas las líneas</SelectItem>
+                        {lineas.map((linea) => (
+                          <SelectItem key={linea.id} value={linea.id.toString()}>
+                            {linea.nombre}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Proveedor</Label>
+                    <Select
+                      value={filters.proveedorId?.toString() || "0"}
+                      onValueChange={(value) => {
+                        const proveedorId = value === "0" ? null : Number.parseInt(value)
+                        setFilters({ ...filters, proveedorId })
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Todos los proveedores" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="0">Todos los proveedores</SelectItem>
+                        {proveedores.map((proveedor) => (
+                          <SelectItem key={proveedor.id} value={proveedor.id.toString()}>
+                            {proveedor.nombre}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Código de Proveedor</Label>
+                    <Input
+                      placeholder="Código del proveedor"
+                      value={filters.codigoProveedor || ""}
+                      onChange={(e) => setFilters({ ...filters, codigoProveedor: e.target.value || null })}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Rango de Stock</Label>
+                  <div className="grid grid-cols-2 gap-4">
+                    <Input
+                      type="number"
+                      placeholder="Stock mínimo"
+                      value={filters.stockDesde ?? ""}
+                      onChange={(e) =>
+                        setFilters({
+                          ...filters,
+                          stockDesde: e.target.value ? Number.parseInt(e.target.value) : null,
+                        })
+                      }
+                    />
+                    <Input
+                      type="number"
+                      placeholder="Stock máximo"
+                      value={filters.stockHasta ?? ""}
+                      onChange={(e) =>
+                        setFilters({
+                          ...filters,
+                          stockHasta: e.target.value ? Number.parseInt(e.target.value) : null,
+                        })
+                      }
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Rango de Precio</Label>
+                  <div className="grid grid-cols-2 gap-4">
+                    <Input
+                      type="number"
+                      placeholder="Precio mínimo"
+                      value={filters.precioDesde ?? ""}
+                      onChange={(e) =>
+                        setFilters({
+                          ...filters,
+                          precioDesde: e.target.value ? Number.parseFloat(e.target.value) : null,
+                        })
+                      }
+                    />
+                    <Input
+                      type="number"
+                      placeholder="Precio máximo"
+                      value={filters.precioHasta ?? ""}
+                      onChange={(e) =>
+                        setFilters({
+                          ...filters,
+                          precioHasta: e.target.value ? Number.parseFloat(e.target.value) : null,
+                        })
+                      }
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Resultados por página</Label>
+                  <Select
+                    value={filters.take?.toString() || "10"}
+                    onValueChange={(value) => setFilters({ ...filters, take: Number.parseInt(value), page: 1 })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="5">5 por página</SelectItem>
+                      <SelectItem value="10">10 por página</SelectItem>
+                      <SelectItem value="20">20 por página</SelectItem>
+                      <SelectItem value="50">50 por página</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={handleClearFilters}>
+                  <X className="mr-2 h-4 w-4" />
+                  Limpiar Filtros
+                </Button>
+                <Button onClick={handleApplyFilters}>Aplicar Filtros</Button>
+              </DialogFooter>
             </DialogContent>
           </Dialog>
 
-          <Button variant="outline" onClick={() => setShowFilterModal(true)} className="bg-transparent">
+          <Button variant="outline" onClick={() => setShowFilterModal(true)} className="bg-transparent relative">
             <Filter className="mr-2 h-4 w-4" />
             Filtrar
+            {activeFiltersCount > 0 && (
+              <Badge variant="destructive" className="ml-2 h-5 w-5 rounded-full p-0 flex items-center justify-center">
+                {activeFiltersCount}
+              </Badge>
+            )}
           </Button>
-
-          <div className="flex-1 min-w-[200px] relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar producto por nombre"
-              value={searchNombre}
-              onChange={(e) => setSearchNombre(e.target.value)}
-              className="pl-9"
-            />
-          </div>
-
-          <div className="flex-1 min-w-[200px] relative">
-            <Barcode className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar producto por código de barra"
-              value={searchCodigo}
-              onChange={(e) => setSearchCodigo(e.target.value)}
-              className="pl-9"
-              disabled
-            />
-          </div>
         </div>
 
         <div className="border rounded-lg overflow-hidden bg-card">
@@ -292,14 +524,14 @@ export function ProductoTable() {
                     Cargando productos...
                   </TableCell>
                 </TableRow>
-              ) : filteredProductos.length === 0 ? (
+              ) : productos.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                     No se encontraron productos
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredProductos.map((producto) => (
+                productos.map((producto) => (
                   <TableRow key={producto.id}>
                     <TableCell className="font-mono text-sm">{producto.id}</TableCell>
                     <TableCell className="font-medium">{producto.nombre}</TableCell>
@@ -367,6 +599,28 @@ export function ProductoTable() {
             </TableBody>
           </Table>
         </div>
+
+        {!loading && productos.length > 0 && (
+          <div className="flex items-center justify-between">
+            <div className="text-sm text-muted-foreground">
+              Mostrando {(currentPage - 1) * itemsPerPage + 1} a {Math.min(currentPage * itemsPerPage, totalProductos)}{" "}
+              de {totalProductos} productos
+            </div>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={handlePreviousPage} disabled={!canGoPrevious}>
+                <ChevronLeft className="h-4 w-4" />
+                Anterior
+              </Button>
+              <div className="text-sm font-medium">
+                Página {currentPage} de {totalPages}
+              </div>
+              <Button variant="outline" size="sm" onClick={handleNextPage} disabled={!canGoNext}>
+                Siguiente
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
 
       <Dialog open={viewModalOpen} onOpenChange={setViewModalOpen}>
